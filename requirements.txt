@@ -2,3 +2,5 @@ sseclient-py
 tomli
 sentencepiece
 pyperclip
+fugashi[unidic]
+unidic
