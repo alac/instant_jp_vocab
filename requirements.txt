@@ -1,0 +1,4 @@
+sseclient-py
+tomli
+sentencepiece
+pyperclip
