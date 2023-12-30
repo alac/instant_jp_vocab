@@ -1,5 +1,6 @@
 user.toml
 response.txt
+recent_lines.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
