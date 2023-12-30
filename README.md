@@ -8,6 +8,6 @@ Useful with a text hooking utility like Textractor.
 3. For AI behaviors, install Oobabooga's Text-Generation-WebUI and enable the API. *Use an AI that has decent Japanese performance and sanity check responses.*
 
 ## Credits
-For definitions and katakana readings in non-ML mode, we use a modified [Jitendex](https://github.com/stephenmk/Jitendex).
+For definitions and katakana readings in non-ML mode, we use a modified [Jitendex](https://github.com/stephenmk/Jitendex), which is under the [ShareAlike license](https://creativecommons.org/licenses/by-sa/4.0/).
 
 For breaking sentences into words, we use [fugashi](https://github.com/polm/fugashi).
