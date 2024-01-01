@@ -167,4 +167,9 @@ if __name__ == '__main__':
                         " allows for tracking each translation history separately when switching sources.",
                         type=str)
     args = parser.parse_args()
+
+    source_settings_path = os.path.join("settings", f"{args.source}.toml")
+    if os.path.isfile(source_settings_path):
+        settings.override_settings(source_settings_path)
+
     monitor_clipboard(args.source)

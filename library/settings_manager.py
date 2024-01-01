@@ -30,16 +30,24 @@ class SettingsManager:
     def remove_override_settings(self):
         self._override_settings = None
 
-    def get_setting(self, setting_name: str) -> Any:
-        main_settings = self._user_settings
+    def _get_setting(self, setting_name: str) -> Any:
         if self._override_settings is not None:
-            main_settings = self._override_settings
+            try:
+                result = search_nested_dict(self._override_settings, setting_name)
+                return result, "override"
+            except ValueError:
+                pass
 
         try:
-            result = search_nested_dict(main_settings, setting_name)
+            result = search_nested_dict(self._user_settings, setting_name), "user"
         except ValueError:
-            result = search_nested_dict(self._default_settings, setting_name)
+            result = search_nested_dict(self._default_settings, setting_name), "default"
         return result
+
+    def get_setting(self, setting_name: str) -> Any:
+        setting, source = self._get_setting(setting_name)
+        # print(f"found {setting_name} in {source}")
+        return setting
 
 
 def search_nested_dict(nested_dict: dict, dotted_key: str) -> Any:
