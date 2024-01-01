@@ -9,12 +9,12 @@ from library.token_count import get_token_count
 from library.settings_manager import settings
 
 
-def monitor_clipboard():
+def monitor_clipboard(source: str):
     previous_content = ""
     history = []
     history_length = settings.get_setting('vocab_list.ai_translation_history_length')
 
-    cache_file = "recent_lines.json"
+    cache_file = os.path.join("translation_history", f"{source}.json")
     if os.path.isfile(cache_file):
         with open(cache_file, 'r', encoding='utf-8') as f:
             history = json.load(f)
@@ -154,10 +154,17 @@ def translate_with_context(context, sentence, temp=.7):
     prompt += f">ENGLISH_START\n"
 
     print("Translation: ")
-    result = run_ai_request(prompt, [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END"], print_prompt=False,
-                            temperature=temp, ban_eos_token=False, max_response=100)
+    result = run_ai_request(prompt, [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END"],
+                            print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100)
     return result
 
 
 if __name__ == '__main__':
-    monitor_clipboard()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("source",
+                        help="The name associated with each 'translation history'. Providing a unique name for each"
+                        " allows for tracking each translation history separately when switching sources.",
+                        type=str)
+    args = parser.parse_args()
+    monitor_clipboard(args.source)
