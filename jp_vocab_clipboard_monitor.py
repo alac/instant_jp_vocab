@@ -39,10 +39,11 @@ def monitor_clipboard(source: str):
                     translate_with_context(history, current_clipboard)
 
                 print("\n\n")
-                history.append(current_clipboard)
+                if current_clipboard not in history:
+                    history.append(current_clipboard)
                 history = history[-history_length:]
                 with open(cache_file, 'w', encoding='utf-8') as f:
-                    json.dump(history, f)
+                    json.dump(history, f, indent=2)
         previous_content = current_clipboard
         time.sleep(1.0)
 
