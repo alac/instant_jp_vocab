@@ -4,3 +4,4 @@ sentencepiece
 pyperclip
 fugashi[unidic]
 unidic
+google-generativeai
