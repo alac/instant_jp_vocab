@@ -12,17 +12,14 @@ preset_name = 'none'
 api_key = "Better to put this in user.toml since that won't be visible to git."
 
 [vocab_list]
-# Enable non-AI generated list of definitions.
-enable_dictionary_definitions = true
-# Enable an AI generated list of definitions.
-enable_ai_definitions = true
+# there are multiple kinds of "vocabulary lists"
+# - defs - uses a dictionary. dumb, fast.
+# - ai_defs - uses an ai to generate the list. slow, sometimes wrong, but understands slang.
+# - ai_defs_rag - uses an ai to generate the list with the dictionary definitions. slow, less wrong, also gets slang.
+# - ai_translation - skips the vocab list stuff and just spits out a translation. different than raw extractor since it also includes the history of dialog.
+processing_order = ["defs", "ai_def_rag", "ai_translation"]
 ai_definitions_temp = 0.5
-# Enable an AI generated list of definitions.
-# This 'augmented' variation takes the non-ai generated list of definitions into account.
-enable_ai_definitions_augmented = true
 ai_definitions_augmented_temp = 0.7
-# Enable an AI translation.
-enable_ai_translation = true
 # The number of previous clipboard values to send to the AI as context.
 ai_translation_history_length = 15
 # An additional 'context' to send with the AI request.

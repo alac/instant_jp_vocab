@@ -22,22 +22,20 @@ def monitor_clipboard(source: str):
     while True:
         current_clipboard = pyperclip.paste()
         if current_clipboard != previous_content:
-            if should_generate_vocabulary_list(current_clipboard):
-                if settings.get_setting('vocab_list.enable_dictionary_definitions'):
-                    print(get_definitions_string(current_clipboard))
-                if settings.get_setting('vocab_list.enable_ai_definitions'):
-                    run_vocabulary_list(current_clipboard,
-                                        settings.get_setting('vocab_list.ai_definitions_temp'),
-                                        use_dictionary=True)
-                    print("")
-                if settings.get_setting('vocab_list.enable_ai_definitions_augmented'):
-                    run_vocabulary_list(current_clipboard,
-                                        settings.get_setting('vocab_list.ai_definitions_augmented_temp'),
-                                        use_dictionary=False)
-                    print("")
-                if settings.get_setting('vocab_list.enable_ai_translation'):
-                    translate_with_context(history, current_clipboard)
-
+            if should_generate_vocabulary_list(sentence=current_clipboard):
+                for task in settings.get_setting('vocab_list.processing_order'):
+                    if task == "defs":
+                        print(get_definitions_string(current_clipboard))
+                    if task == "ai_defs":
+                        run_vocabulary_list(current_clipboard,
+                                            settings.get_setting('vocab_list.ai_definitions_temp'),
+                                            use_dictionary=False)
+                    if task == "ai_def_rag":
+                        run_vocabulary_list(current_clipboard,
+                                            settings.get_setting('vocab_list.ai_definitions_augmented_temp'),
+                                            use_dictionary=True)
+                    if task == "ai_translation":
+                        translate_with_context(history, current_clipboard)
                 print("\n\n")
                 if current_clipboard not in history:
                     history.append(current_clipboard)
@@ -129,7 +127,7 @@ def get_definitions_string(sentence: str):
 
 
 def should_generate_vocabulary_list(sentence):
-    if 5 > len(sentence) or 60 < len(sentence):
+    if 5 > len(sentence) or 100 < len(sentence):
         print("Failed length check.")
         return False
     if "\n" in sentence:
