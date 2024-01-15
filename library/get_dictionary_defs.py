@@ -21,6 +21,7 @@ def _initialize():
 class WordDefinition(NamedTuple):
     word: str
     reading: str
+    hiragana_reading: str
     meanings: list[str]
 
 
@@ -48,8 +49,66 @@ def get_definitions_for_sentence(sentence: str) -> list[WordDefinition]:
             base_word = str(word)
             base_word_reading = word.feature.pron
         meanings = _meaning_dict.get(base_word, {}).get("meanings", [])
-        readings.append(WordDefinition(base_word, base_word_reading, meanings))
+        readings.append(WordDefinition(base_word, base_word_reading, hiragana_reading(base_word_reading), meanings))
     return readings
+
+
+def hiragana_reading(katakana_reading: str) -> str:
+    katakana_to_hiragana = {
+        "ア": "あ",
+        "イ": "い",
+        "ウ": "う",
+        "エ": "え",
+        "オ": "お",
+        "カ": "か",
+        "キ": "き",
+        "ク": "く",
+        "ケ": "け",
+        "コ": "こ",
+        "サ": "さ",
+        "シ": "し",
+        "ス": "す",
+        "セ": "せ",
+        "ソ": "そ",
+        "タ": "た",
+        "チ": "ち",
+        "ツ": "つ",
+        "テ": "て",
+        "ト": "と",
+        "ナ": "な",
+        "ニ": "に",
+        "ヌ": "ぬ",
+        "ネ": "ね",
+        "ノ": "の",
+        "ハ": "は",
+        "ヒ": "ひ",
+        "フ": "ふ",
+        "ヘ": "へ",
+        "ホ": "ほ",
+        "マ": "ま",
+        "ミ": "み",
+        "ム": "む",
+        "メ": "め",
+        "モ": "も",
+        "ヤ": "や",
+        "ユ": "ゆ",
+        "ヨ": "よ",
+        "ラ": "ら",
+        "リ": "り",
+        "ル": "る",
+        "レ": "れ",
+        "ロ": "ろ",
+        "ワ": "わ",
+        "ヲ": "を",
+        "ン": "ん",
+        "ヂ": "じ",
+        "ヅ": "づ",
+        "ッ": "っ",
+        "ヰ": "ゐ",
+        "ヱ": "ゑ"
+    }
+    result = [katakana_to_hiragana.get(c, c) for c in katakana_reading]
+    return "".join(result)
 
 
 if __name__ == "__main__":

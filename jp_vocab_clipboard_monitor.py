@@ -132,7 +132,8 @@ def get_definitions_string(sentence: str):
     for definition in get_definitions_for_sentence(sentence):
         if definition.meanings:
             meanings_joined = "; ".join(definition.meanings)
-            text += f"- {definition.word}. Reading: {definition.reading}. Meanings: {meanings_joined}\n"
+            text += (f"- {definition.word}. Reading: {definition.reading}, {definition.hiragana_reading}."
+                     f" Meanings: {meanings_joined}\n")
 
     return f"Definitions:\n{text}"
 
