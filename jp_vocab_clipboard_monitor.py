@@ -9,6 +9,15 @@ from library.token_count import get_token_count
 from library.settings_manager import settings
 
 
+class ANSIColors:
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    END = '\033[0m'
+
+
 def monitor_clipboard(source: str):
     previous_content = ""
     history = []
@@ -35,7 +44,9 @@ def monitor_clipboard(source: str):
                                             settings.get_setting('vocab_list.ai_definitions_augmented_temp'),
                                             use_dictionary=True)
                     if task == "ai_translation":
+                        print(ANSIColors.GREEN, end="")
                         translate_with_context(history, current_clipboard)
+                        print(ANSIColors.END, end="")
                 print("\n\n")
                 if current_clipboard not in history:
                     history.append(current_clipboard)
