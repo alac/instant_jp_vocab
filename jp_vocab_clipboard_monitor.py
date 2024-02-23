@@ -66,13 +66,13 @@ def run_vocabulary_list(sentence, temp, use_dictionary=True):
 
 Sentence: 璃燈「……さっきのは言動や行動は全部、この件を解決させる為のものだったんだよな？」
 Vocabulary:
-    璃燈 - りとう - Rito
-    さっきの - さっき の - the just before
-    言動や行動 - げんどう や こうどう- words and actions
-    全部 - ぜんぶ - all
-    この件 - この けん - this matter
-    解決させる為のもの - かいけつさせる ため の も の - for the sake of resolving
-    だったんだよな？ - だったんだよな - wasn't it?
+    璃燈 (りとう): Rito
+    さっきの (さっき の): the just before
+    言動や行動 (げんどう や こうどう): words and actions
+    全部 (ぜんぶ): all
+    この件 (この けん): this matter
+    解決させる為のもの (かいけつさせる ため の も の): for the sake of resolving
+    だったんだよな？ (だったんだよな): wasn't it?
 Idioms:
     N/A
 
@@ -80,43 +80,43 @@ Idioms:
 
 Sentence: 佳伽「でも、そうやってあんまりストイック過ぎると、本番前に心身共に参っちゃうかもしれないよ？」
 Vocabulary:
-    佳伽 - よしか - Yoshika
-    でも - でも - but
-    そうやって - そう やって - in that way
-    あんまり - あんまり - too much
-    ストイック過ぎると - ストイック すぎる と - if you're too strict
-    本番前に - ほんばん まえ に - before the main event
-    心身共に - しんしん ともに - both physically and mentally
-    参っちゃうかもしれないよ？ - まっちゃう かもしれない よ？ - you might end up feeling unwell, you know?
+    佳伽 (よしか): Yoshika
+    でも (でも): but
+    そうやって (そう やって): in that way
+    あんまり (あんまり): too much
+    ストイック過ぎると (ストイック すぎる と): if you're too strict
+    本番前に (ほんばん まえ に): before the main event
+    心身共に (しんしん ともに): both physically and mentally
+    参っちゃうかもしれないよ？ (まっちゃう かもしれない よ？): you might end up feeling unwell, you know?
 Idioms:
     N/A
 
 
 Sentence: 璃燈「でもな。ちょっと、やり過ぎじゃねぇかな。あたしの気持ちを随分、かき乱してくれたよな？」
 Vocabulary:
-    璃燈 - りとう - Ritou
-    でもな - でもな - but
-    ちょっと - ちょっと - a little
-    やり過ぎじゃねぇかな - やりすぎ じゃねぇかな - don't you think it's a bit too much?
-    あたしの - あたしの - my
-    気持ちを - きもちを - feelings
-    随分 - ずいぶん - quite a bit
-    かき乱してくれた - かきみだしてくれた - you stirred up
-    よな？ - よな？ - right?
+    璃燈 (りとう): Ritou
+    でもな (でもな): but
+    ちょっと (ちょっと): a little
+    やり過ぎじゃねぇかな (やりすぎ じゃねぇかな): don't you think it's a bit too much?
+    あたしの (あたしの): my
+    気持ちを (きもちを): feelings
+    随分 (ずいぶん): quite a bit
+    かき乱してくれた (かきみだしてくれた): you stirred up
+    よな？ (よな？): right?
 Idioms:
     N/A
 
 
 Sentence: 結灯「……あの……差し出がましいかもしれませんが……」
 Vocabulary:
-    結灯 - ゆうひ - Yuuhi
-    あの - あの - um
-    差し出がましいかもしれませんが - さしでがましいですが - it may be presumptuous, but
+    結灯 (ゆうひ): Yuuhi
+    あの (あの): um
+    差し出がましいかもしれませんが (さしでがましいですが): it may be presumptuous, but
 Idioms:
-    差し出がましいかもしれませんが - sashi dega mashikamo shiremasen ga - it may be presumptuous, but.
+    差し出がましいかもしれませんが (sashi dega mashikamo shiremasen ga): it may be presumptuous, but.
         It is used to introduce a suggestion or an opinion that may be considered rude or unnecessary by the listener.
-        差し出が - さしでが - to offer, to present
-        あげます - あげます - to give
+        差し出が (さしでが): to offer, to present
+        あげます (あげます): to give
 
 
 Sentence: """ + sentence.strip() + """
