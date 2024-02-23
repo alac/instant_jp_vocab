@@ -129,11 +129,14 @@ Vocabulary: """
 
 def get_definitions_string(sentence: str):
     text = ""
+    seen = []
     for definition in get_definitions_for_sentence(sentence):
         if definition.meanings:
-            meanings_joined = "; ".join(definition.meanings)
-            text += (f"- {definition.word}. Reading: {definition.reading}, {definition.hiragana_reading}."
-                     f" Meanings: {meanings_joined}\n")
+            new = f"- {definition.word} ({definition.hiragana_reading})\n"
+            if new in seen:
+                continue
+            text += new
+            seen.append(new)
 
     return f"Definitions:\n{text}"
 
