@@ -54,6 +54,8 @@ def get_definitions_for_sentence(sentence: str) -> list[WordDefinition]:
 
 
 def hiragana_reading(katakana_reading: str) -> str:
+    if katakana_reading is None:
+        return ""
     katakana_to_hiragana = {
         "ア": "あ",
         "イ": "い",
