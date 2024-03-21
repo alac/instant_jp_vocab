@@ -5,7 +5,7 @@ import time
 from queue import SimpleQueue
 from typing import Optional
 
-from library.ai_requests import run_ai_request
+from library.ai_requests import run_ai_request_stream
 from library.get_dictionary_defs import get_definitions_for_sentence
 from library.token_count import get_token_count
 from library.settings_manager import settings
@@ -142,7 +142,7 @@ Sentence: """ + sentence.strip() + """
 Vocabulary: """
     print("prompt length:", get_token_count(prompt))
     print("Sentence: """ + sentence.strip())
-    for tok in run_ai_request(prompt, ["Sentence:", "\n\n"], print_prompt=False, temperature=temp,
+    for tok in run_ai_request_stream(prompt, ["Sentence:", "\n\n"], print_prompt=False, temperature=temp,
                               ban_eos_token=False, max_response=500):
         if update_queue is not None:
             update_queue.put(UIUpdateCommand("define", sentence, tok))
@@ -195,7 +195,7 @@ def translate_with_context(context, sentence, temp=.7,
     prompt += f">ENGLISH_START\n"
 
     print("Translation: ")
-    for tok in run_ai_request(prompt,
+    for tok in run_ai_request_stream(prompt,
                               [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END", "\n\n\n", ">\n>\n>"],
                               print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100):
         if update_queue is not None:
