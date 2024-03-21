@@ -142,10 +142,15 @@ Sentence: """ + sentence.strip() + """
 Vocabulary: """
     print("prompt length:", get_token_count(prompt))
     print("Sentence: """ + sentence.strip())
+    last_tokens = []
     for tok in run_ai_request_stream(prompt, ["Sentence:", "\n\n"], print_prompt=False, temperature=temp,
                               ban_eos_token=False, max_response=500):
         if update_queue is not None:
             update_queue.put(UIUpdateCommand("define", sentence, tok))
+        last_tokens.append(tok)
+        last_tokens = last_tokens[-10:]
+        if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
+            break
 
 
 def get_definitions_string(sentence: str):
@@ -195,12 +200,16 @@ def translate_with_context(context, sentence, temp=.7,
     prompt += f">ENGLISH_START\n"
 
     print("Translation: ")
+    last_tokens = []
     for tok in run_ai_request_stream(prompt,
                               [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END", "\n\n\n", ">\n>\n>"],
                               print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100):
         if update_queue is not None:
             update_queue.put(UIUpdateCommand("translate", sentence, tok))
-            print(f">{tok}>")
+        last_tokens.append(tok)
+        last_tokens = last_tokens[-10:]
+        if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
+            break
 
 
 if __name__ == '__main__':
