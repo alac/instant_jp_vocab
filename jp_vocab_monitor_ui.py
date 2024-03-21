@@ -66,7 +66,8 @@ class JpVocabUI:
                     translate_with_context(self.history, command.sentence, update_queue=self.ui_update_queue)
                     self.ui_update_queue.put(UIUpdateCommand("translate", command.sentence, "\n"))
                 if command.command_type == "define":
-                    run_vocabulary_list(command.sentence, temp=.7, use_dictionary=True,
+                    temp = settings.get_setting('vocab_list.ai_definitions_augmented_temp')
+                    run_vocabulary_list(command.sentence, temp=temp, use_dictionary=True,
                                         update_queue=self.ui_update_queue)
             except Empty:
                 pass
@@ -160,7 +161,7 @@ class JpVocabUI:
         if not self.ui_monitor_is_enabled:
             textfield_value = "Monitoring is disabled!"
         else:
-            textfield_value = f"{self.ui_sentence.strip()}\n{self.ui_translation.strip()}\n{self.ui_definitions}"
+            textfield_value = f"{self.ui_sentence.strip()}\n\n{self.ui_translation.strip()}\n{self.ui_definitions}"
         if self.last_textfield_value is None or self.last_textfield_value != textfield_value:
             self.text_output_scrolledtext.delete("1.0", tk.END)  # Clear current contents.
             self.text_output_scrolledtext.insert(tk.INSERT, textfield_value)
