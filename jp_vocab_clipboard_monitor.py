@@ -2,6 +2,8 @@ import json
 import os.path
 import pyperclip
 import time
+from queue import SimpleQueue
+from typing import Optional
 
 from library.ai_requests import run_ai_request
 from library.get_dictionary_defs import get_definitions_for_sentence
@@ -16,6 +18,13 @@ class ANSIColors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
     END = '\033[0m'
+
+
+class UIUpdateCommand:
+    def __init__(self, update_type: str, sentence: str, token: str):
+        self.update_type = update_type
+        self.sentence = sentence
+        self.token = token
 
 
 def monitor_clipboard(source: str):
@@ -33,8 +42,8 @@ def monitor_clipboard(source: str):
         if current_clipboard != previous_content:
             if should_generate_vocabulary_list(sentence=current_clipboard):
                 for task in settings.get_setting('vocab_list.processing_order'):
-                    if task == "defs":
-                        print(get_definitions_string(current_clipboard))
+                    # if task == "defs":
+                    #     print(get_definitions_string(current_clipboard))
                     if task == "ai_defs":
                         run_vocabulary_list(current_clipboard,
                                             settings.get_setting('vocab_list.ai_definitions_temp'),
@@ -45,6 +54,8 @@ def monitor_clipboard(source: str):
                                             use_dictionary=True)
                     if task == "ai_translation":
                         print(ANSIColors.GREEN, end="")
+                        translate_with_context(history, current_clipboard)
+                        translate_with_context(history, current_clipboard)
                         translate_with_context(history, current_clipboard)
                         print(ANSIColors.END, end="")
                 print("\n\n")
@@ -57,7 +68,8 @@ def monitor_clipboard(source: str):
         time.sleep(1.0)
 
 
-def run_vocabulary_list(sentence, temp, use_dictionary=True):
+def run_vocabulary_list(sentence: str, temp: float, use_dictionary: bool = True,
+                        update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None):
     definitions = ""
     if use_dictionary:
         definitions = get_definitions_string(sentence)
@@ -130,8 +142,10 @@ Sentence: """ + sentence.strip() + """
 Vocabulary: """
     print("prompt length:", get_token_count(prompt))
     print("Sentence: """ + sentence.strip())
-    run_ai_request(prompt, ["Sentence:", "\n\n"], print_prompt=False, temperature=temp,
-                   ban_eos_token=False, max_response=500)
+    for tok in run_ai_request(prompt, ["Sentence:", "\n\n"], print_prompt=False, temperature=temp,
+                              ban_eos_token=False, max_response=500):
+        if update_queue is not None:
+            update_queue.put(UIUpdateCommand("define", sentence, tok))
 
 
 def get_definitions_string(sentence: str):
@@ -162,7 +176,8 @@ def should_generate_vocabulary_list(sentence):
     return False
 
 
-def translate_with_context(context, sentence, temp=.7):
+def translate_with_context(context, sentence, temp=.7,
+                           update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None):
     prompt = ("<|system|>Enter RP mode. Pretend to be a Japanese translator whose persona follows:"
               " You are a Japanese teacher, working on study material for your students. You take into account "
               " information about the characters, the previous lines from stories and provide an accurate translation "
@@ -180,9 +195,12 @@ def translate_with_context(context, sentence, temp=.7):
     prompt += f">ENGLISH_START\n"
 
     print("Translation: ")
-    result = run_ai_request(prompt, [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END", "\n\n\n", ">\n>\n>"],
-                            print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100)
-    return result
+    for tok in run_ai_request(prompt,
+                              [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END", "\n\n\n", ">\n>\n>"],
+                              print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100):
+        if update_queue is not None:
+            update_queue.put(UIUpdateCommand("translate", sentence, tok))
+            print(f">{tok}>")
 
 
 if __name__ == '__main__':
