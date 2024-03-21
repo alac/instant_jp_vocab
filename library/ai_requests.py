@@ -16,20 +16,33 @@ class EmptyResponseException(ValueError):
 def run_ai_request(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
                    clean_blank_lines: bool = True, max_response: int = 1536, ban_eos_token: bool = True,
                    print_prompt=True):
+    result = ""
+    for tok in run_ai_request_stream(prompt, custom_stopping_strings, temperature, max_response,
+                                               ban_eos_token, print_prompt):
+        result += tok
+    if clean_blank_lines:
+        result = "\n".join([l for l in "".join(result).splitlines() if len(l.strip()) > 0])
+    if result.endswith("</s>"):
+        result = result[:-len("</s>")]
+    return result
+
+
+def run_ai_request_stream(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
+                          max_response: int = 1536, ban_eos_token: bool = True, print_prompt=True):
     api_choice = settings.get_setting('ai_settings.api')
     match api_choice:
         case "oobabooga_api":
-            return run_ai_request_ooba(prompt, custom_stopping_strings, temperature, clean_blank_lines, max_response,
-                                       ban_eos_token, print_prompt)
+            for tok in run_ai_request_ooba(prompt, custom_stopping_strings, temperature, max_response, ban_eos_token,
+                                           print_prompt):
+                yield tok
         case "gemini_pro":
-            return run_ai_request_gemini_pro(prompt, custom_stopping_strings, temperature, max_response)
+            yield run_ai_request_gemini_pro(prompt, custom_stopping_strings, temperature, max_response)
         case _:
             raise ValueError(f"{api_choice} is unsupported for the setting ai_settings.api")
 
 
 def run_ai_request_ooba(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
-                        clean_blank_lines: bool = True, max_response: int = 1536, ban_eos_token: bool = True,
-                        print_prompt=True):
+                        max_response: int = 1536, ban_eos_token: bool = True, print_prompt=True):
     request_url = settings.get_setting('oobabooga_api.request_url')
     max_context = settings.get_setting('oobabooga_api.context_length')
     if not custom_stopping_strings:
@@ -99,15 +112,8 @@ def run_ai_request_ooba(prompt: str, custom_stopping_strings: Optional[list[str]
             print(new_text, end='')
             f.write(new_text)
             result += new_text
+            yield new_text
     print()
-
-    if clean_blank_lines:
-        result = "\n".join([l for l in result.splitlines() if len(l.strip()) > 0])
-
-    if result.endswith("</s>"):
-        result = result[:-len("</s>")]
-
-    return result
 
 
 def run_ai_request_gemini_pro(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
