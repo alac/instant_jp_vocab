@@ -13,9 +13,10 @@ from jp_vocab_clipboard_monitor import (should_generate_vocabulary_list, UIUpdat
 
 
 class MonitorCommand:
-    def __init__(self, command_type: str, sentence: str):
+    def __init__(self, command_type: str, sentence: str, history: list[str]):
         self.command_type = command_type
         self.sentence = sentence
+        self.history = history
 
 
 class JpVocabUI:
@@ -63,7 +64,7 @@ class JpVocabUI:
             command = queue.get(block=True)  # type: MonitorCommand
             try:
                 if command.command_type == "translate":
-                    translate_with_context(self.history, command.sentence, update_queue=self.ui_update_queue)
+                    translate_with_context(command.history, command.sentence, update_queue=self.ui_update_queue)
                     self.ui_update_queue.put(UIUpdateCommand("translate", command.sentence, "\n"))
                 if command.command_type == "define":
                     temp = settings.get_setting('vocab_list.ai_definitions_augmented_temp')
@@ -103,13 +104,13 @@ class JpVocabUI:
 
     def trigger_translation(self):
         self.ui_translation = ""
-        self.command_queue.put(MonitorCommand("translate", self.ui_sentence))
-        self.command_queue.put(MonitorCommand("translate", self.ui_sentence))
-        self.command_queue.put(MonitorCommand("translate", self.ui_sentence))
+        self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
+        self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
+        self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
 
     def get_definitions(self):
         self.ui_definitions = ""
-        self.command_queue.put(MonitorCommand("define", self.ui_sentence))
+        self.command_queue.put(MonitorCommand("define", self.ui_sentence, []))
 
     def update_status(self, root: tk.Tk):
         self.check_clipboard()
