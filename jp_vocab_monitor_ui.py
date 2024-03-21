@@ -78,6 +78,8 @@ class JpVocabUI:
         root = tk.Tk()
 
         root.geometry("{}x{}+0+0".format(655, 500))
+        root.grid_rowconfigure(1, weight=1)
+        root.grid_columnconfigure(0, weight=1)
 
         self.toggle_monitor_button = tk.Button(
             root, text="toggle_monitor", command=self.toggle_monitor
