@@ -62,7 +62,11 @@ def run_vocabulary_list(sentence, temp, use_dictionary=True):
     if use_dictionary:
         definitions = get_definitions_string(sentence)
 
-    prompt = """In this task, you are a Japanese teacher. These are notes that you're prepping for your students.
+    prompt = """<|system|>Enter RP mode. Pretend to be a Japanese teacher whose persona follows:
+As a Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and pointing out idioms. For each word or idiom you define, you include the reading in parenthesis and the definition after a "-" character.
+
+You shall reply to the user while staying in character, and generate accurate responses.
+    
 
 Sentence: 璃燈「……さっきのは言動や行動は全部、この件を解決させる為のものだったんだよな？」
 Vocabulary:
@@ -78,18 +82,21 @@ Idioms:
 
 """ + definitions + """
 
-Sentence: 佳伽「でも、そうやってあんまりストイック過ぎると、本番前に心身共に参っちゃうかもしれないよ？」
+Sentence: 璃燈「カレシなら、カノジョをその気にさせた責任取れよ」
 Vocabulary:
-    佳伽 (よしか): Yoshika
-    でも (でも): but
-    そうやって (そう やって): in that way
-    あんまり (あんまり): too much
-    ストイック過ぎると (ストイック すぎる と): if you're too strict
-    本番前に (ほんばん まえ に): before the main event
-    心身共に (しんしん ともに): both physically and mentally
-    参っちゃうかもしれないよ？ (まっちゃう かもしれない よ？): you might end up feeling unwell, you know?
+   璃燈 (りとう): Rito
+   カレシ (かれし): boyfriend
+   カノジョ (かのじょ): girlfriend
+   その気にさせた (そのきにさせた): to make someone fall in love
+   責任 (せきにん): responsibilities
+   取れよ (とれよ): should take
 Idioms:
-    N/A
+   その気にさせる (sono ki ni saseru): to make someone fall in love
+       It is a common phrase in romantic manga and anime.
+       その (その): that
+       気 (き): feeling
+       に (に): at
+       させる (させる): to make
 
 
 Sentence: 璃燈「でもな。ちょっと、やり過ぎじゃねぇかな。あたしの気持ちを随分、かき乱してくれたよな？」
@@ -156,7 +163,12 @@ def should_generate_vocabulary_list(sentence):
 
 
 def translate_with_context(context, sentence, temp=.7):
-    prompt = "In this task, use the context and the previous lines to translate the japanese sentence to english\n"
+    prompt = ("<|system|>Enter RP mode. Pretend to be a Japanese translator whose persona follows:"
+              " You are a Japanese teacher, working on study material for your students. You take into account "
+              " information about the characters, the previous lines from stories and provide an accurate translation "
+              " for the sentence given. You shall reply to the user while staying in character, and generate accurate"
+              " responses.\n")
+
     prompt += settings.get_setting('vocab_list.ai_translation_context')
 
     if context:
@@ -168,7 +180,7 @@ def translate_with_context(context, sentence, temp=.7):
     prompt += f">ENGLISH_START\n"
 
     print("Translation: ")
-    result = run_ai_request(prompt, [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END"],
+    result = run_ai_request(prompt, [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END", "\n\n\n", ">\n>\n>"],
                             print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100)
     return result
 
