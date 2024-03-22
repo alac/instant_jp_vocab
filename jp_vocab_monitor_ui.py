@@ -43,6 +43,10 @@ class JpVocabUI:
         self.history_length = -1
         self.previous_clipboard = ""
 
+        # synchronization
+        self.locked_sentence = ""
+        self.sentence_lock = threading.Lock()
+
         # initialize
         cache_file = os.path.join("translation_history", f"{self.source}.json")
         if os.path.isfile(cache_file):
@@ -63,6 +67,10 @@ class JpVocabUI:
         while True:
             command = queue.get(block=True)  # type: MonitorCommand
             try:
+                with self.sentence_lock:
+                    latest_sentence = self.locked_sentence
+                if command.sentence != latest_sentence:
+                    continue
                 if command.command_type == "translate":
                     translate_with_context(command.history, command.sentence, update_queue=self.ui_update_queue)
                     self.ui_update_queue.put(UIUpdateCommand("translate", command.sentence, "\n"))
@@ -141,6 +149,8 @@ class JpVocabUI:
                 self.ui_translation = ""
                 self.ui_definitions = ""
                 self.last_textfield_value = None
+                with self.sentence_lock:
+                    self.locked_sentence = current_clipboard
                 self.trigger_translation()
 
                 self.history = self.history[-self.history_length:]
@@ -156,7 +166,6 @@ class JpVocabUI:
         if update_command.sentence == self.ui_sentence:
             if update_command.update_type == "translate":
                 self.ui_translation += update_command.token
-                print(f"[{update_command.token}]")
             if update_command.update_type == "define":
                 self.ui_definitions += update_command.token
 
