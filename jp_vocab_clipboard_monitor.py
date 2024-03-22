@@ -4,6 +4,7 @@ import pyperclip
 import time
 from queue import SimpleQueue
 from typing import Optional
+from threading import Lock
 
 from library.ai_requests import run_ai_request_stream
 from library.get_dictionary_defs import get_definitions_for_sentence
@@ -25,6 +26,18 @@ class UIUpdateCommand:
         self.update_type = update_type
         self.sentence = sentence
         self.token = token
+
+
+REQUEST_INTERRUPT_FLAG = False
+REQUEST_INTERRUPT_LOCK = Lock()
+
+
+def request_interrupt_atomic_swap(new_value: bool) -> bool:
+    global REQUEST_INTERRUPT_FLAG
+    with REQUEST_INTERRUPT_LOCK:
+        old_value = REQUEST_INTERRUPT_FLAG
+        REQUEST_INTERRUPT_FLAG = new_value
+    return old_value
 
 
 def monitor_clipboard(source: str):
@@ -70,6 +83,8 @@ def monitor_clipboard(source: str):
 
 def run_vocabulary_list(sentence: str, temp: float, use_dictionary: bool = True,
                         update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None):
+    request_interrupt_atomic_swap(False)
+
     definitions = ""
     if use_dictionary:
         definitions = get_definitions_string(sentence)
@@ -143,8 +158,10 @@ Vocabulary: """
     print("prompt length:", get_token_count(prompt))
     print("Sentence: """ + sentence.strip())
     last_tokens = []
-    for tok in run_ai_request_stream(prompt, ["Sentence:", "\n\n"], print_prompt=False, temperature=temp,
-                              ban_eos_token=False, max_response=500):
+    for tok in run_ai_request_stream(prompt, ["Sentence:", "\n\n"], print_prompt=False,
+                                     temperature=temp, ban_eos_token=False, max_response=500):
+        if request_interrupt_atomic_swap(False):
+            break
         if update_queue is not None:
             update_queue.put(UIUpdateCommand("define", sentence, tok))
         last_tokens.append(tok)
@@ -183,6 +200,7 @@ def should_generate_vocabulary_list(sentence):
 
 def translate_with_context(context, sentence, temp=.7,
                            update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None):
+    request_interrupt_atomic_swap(False)
     prompt = ("<|system|>Enter RP mode. Pretend to be a Japanese translator whose persona follows:"
               " You are a Japanese teacher, working on study material for your students. You take into account "
               " information about the characters, the previous lines from stories and provide an accurate translation "
@@ -204,6 +222,8 @@ def translate_with_context(context, sentence, temp=.7,
     for tok in run_ai_request_stream(prompt,
                               [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END", "\n\n\n", ">\n>\n>"],
                               print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100):
+        if request_interrupt_atomic_swap(False):
+            break
         if update_queue is not None:
             update_queue.put(UIUpdateCommand("translate", sentence, tok))
         last_tokens.append(tok)

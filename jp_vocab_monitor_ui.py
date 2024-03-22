@@ -9,7 +9,7 @@ import pyperclip
 
 from library.settings_manager import settings
 from jp_vocab_clipboard_monitor import (should_generate_vocabulary_list, UIUpdateCommand, run_vocabulary_list,
-                                        translate_with_context)
+                                        translate_with_context, request_interrupt_atomic_swap)
 
 
 class MonitorCommand:
@@ -144,6 +144,8 @@ class JpVocabUI:
                 if not any([(current_clipboard in previous or previous in current_clipboard) for previous in
                             self.history]):
                     self.history.append(current_clipboard)
+
+                request_interrupt_atomic_swap(True)
 
                 self.ui_sentence = current_clipboard
                 self.ui_translation = ""
