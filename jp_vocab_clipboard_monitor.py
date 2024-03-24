@@ -161,6 +161,7 @@ Vocabulary: """
     for tok in run_ai_request_stream(prompt, ["Sentence:", "\n\n"], print_prompt=False,
                                      temperature=temp, ban_eos_token=False, max_response=500):
         if request_interrupt_atomic_swap(False):
+            print("---\n")
             break
         if update_queue is not None:
             update_queue.put(UIUpdateCommand("define", sentence, tok))
@@ -223,6 +224,7 @@ def translate_with_context(context, sentence, temp=.7,
                               [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END", "\n\n\n", ">\n>\n>"],
                               print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100):
         if request_interrupt_atomic_swap(False):
+            print("---\n")
             break
         if update_queue is not None:
             update_queue.put(UIUpdateCommand("translate", sentence, tok))
