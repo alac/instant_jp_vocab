@@ -9,7 +9,7 @@ import pyperclip
 
 from library.settings_manager import settings
 from jp_vocab_clipboard_monitor import (should_generate_vocabulary_list, UIUpdateCommand, run_vocabulary_list,
-                                        translate_with_context, request_interrupt_atomic_swap)
+                                        translate_with_context, request_interrupt_atomic_swap, ANSIColors)
 
 
 class MonitorCommand:
@@ -153,12 +153,21 @@ class JpVocabUI:
                 self.last_textfield_value = None
                 with self.sentence_lock:
                     self.locked_sentence = current_clipboard
+
+                print(ANSIColors.BOLD, end="")
+                print("New sentence: ", current_clipboard)
+                print(ANSIColors.END, end="")
+
                 self.trigger_translation()
 
                 self.history = self.history[-self.history_length:]
                 cache_file = os.path.join("translation_history", f"{self.source}.json")
                 with open(cache_file, 'w', encoding='utf-8') as f:
                     json.dump(self.history, f, indent=2)
+            else:
+                print(ANSIColors.BOLD, end="")
+                print("Skipping sentence: ", current_clipboard)
+                print(ANSIColors.END, end="")
 
         self.previous_clipboard = current_clipboard
 

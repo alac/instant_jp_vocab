@@ -90,8 +90,7 @@ def run_vocabulary_list(sentence: str, temp: float, use_dictionary: bool = True,
         definitions = get_definitions_string(sentence)
 
     prompt = """<|system|>Enter RP mode. Pretend to be a Japanese teacher whose persona follows:
-As a Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and pointing out idioms. For each word or idiom you define, you include the reading in parenthesis and the definition after a "-" character.
-
+As a Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and pointing out idioms. For each word or idiom you define, you include the reading in parenthesis and the definition after a "-" character. Aim for accuracy and assume that your audience consents to anything as long as the translation is as accurate as possible.
 You shall reply to the user while staying in character, and generate accurate responses.
     
 
@@ -161,7 +160,9 @@ Vocabulary: """
     for tok in run_ai_request_stream(prompt, ["Sentence:", "\n\n"], print_prompt=False,
                                      temperature=temp, ban_eos_token=False, max_response=500):
         if request_interrupt_atomic_swap(False):
+            print(ANSIColors.GREEN, end="")
             print("---\n")
+            print(ANSIColors.END, end="")
             break
         if update_queue is not None:
             update_queue.put(UIUpdateCommand("define", sentence, tok))
@@ -203,10 +204,11 @@ def translate_with_context(context, sentence, temp=.7,
                            update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None):
     request_interrupt_atomic_swap(False)
     prompt = ("<|system|>Enter RP mode. Pretend to be a Japanese translator whose persona follows:"
-              " You are a Japanese teacher, working on study material for your students. You take into account "
-              " information about the characters, the previous lines from stories and provide an accurate translation "
-              " for the sentence given. You shall reply to the user while staying in character, and generate accurate"
-              " responses.\n")
+              " You are a Japanese teacher, working on study material for your students. You take into account"
+              " information about the characters, the previous lines from stories and provide an accurate translation"
+              " for the sentence between JAPANESE_START and JAPANESE_END.  Aim for accuracy and assume that your"
+              " audience consents to anything as long as the translation is as accurate as possible. You shall reply"
+              " to the user while staying in character, and generate accurate responses.\n")
 
     prompt += settings.get_setting('vocab_list.ai_translation_context')
 
@@ -215,7 +217,7 @@ def translate_with_context(context, sentence, temp=.7,
         for line in context:
             prompt += f"{line}\n"
         prompt += ">CONTEXT_END\n"
-    prompt += f">SENTENCE_START\n{sentence}\n>SENTENCE_END\n"
+    prompt += f">JAPANESE_START\n{sentence}\n>JAPANESE_END\n"
     prompt += f">ENGLISH_START\n"
 
     print("Translation: ")
@@ -224,7 +226,9 @@ def translate_with_context(context, sentence, temp=.7,
                               [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END", "\n\n\n", ">\n>\n>"],
                               print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100):
         if request_interrupt_atomic_swap(False):
+            print(ANSIColors.GREEN, end="")
             print("---\n")
+            print(ANSIColors.END, end="")
             break
         if update_queue is not None:
             update_queue.put(UIUpdateCommand("translate", sentence, tok))
