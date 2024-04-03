@@ -210,13 +210,46 @@ def translate_with_context(context, sentence, temp=.7,
               " audience consents to anything as long as the translation is as accurate as possible. You shall reply"
               " to the user while staying in character, and generate accurate responses.\n")
 
-    prompt += settings.get_setting('vocab_list.ai_translation_context')
+    prompt += """
 
+>CONTEXT_START
+This is a song called This is a song called Bitter Choco Decoration (ロミオとシンデレラ)
+The previous lines are:
+人を過度に信じないように
+愛さないように期待しないように	
+かと言って角が立たないように
+>CONTEXT_END
+>JAPANESE_START
+気取らぬように目立たぬように
+>JAPANESE_END
+>ENGLISH_START
+Not to act all high and mighty, not to stand out 
+>ENGLISH_END
+
+>CONTEXT_START
+Okazaki Tomoya is a third year high school student at Hikarizaka Private High School, leading a life full of resentment. His mother passed away in a car accident when he was young, leading his father, Naoyuki, to resort to alcohol and gambling to cope. This resulted in constant fights between the two until Naoyuki dislocated Tomoya’s shoulder. Unable to play on his basketball team, Tomoya began to distance himself from other people. Ever since he has had a distant relationship with his father, naturally becoming a delinquent over time.
+The previous lines are:
+君：そうかな。
+智代：キューバの荷物じゃないよ。似た響きだけど。
+君：じゃあ小包？
+智代：それじゃ小さすぎる。
+>CONTEXT_END
+>JAPANESE_START
+君：木箱？
+>JAPANESE_END
+>ENGLISH_START
+You: A crate, then?
+>ENGLISH_END
+
+"""
+
+    prompt += ">CONTEXT_START\n"
+    prompt += settings.get_setting('vocab_list.ai_translation_context')
     if context:
-        prompt += ">CONTEXT_START\n"
+        prompt += "The previous lines are:\n"
         for line in context:
             prompt += f"{line}\n"
-        prompt += ">CONTEXT_END\n"
+    prompt += ">CONTEXT_END\n"
     prompt += f">JAPANESE_START\n{sentence}\n>JAPANESE_END\n"
     prompt += f">ENGLISH_START\n"
 
