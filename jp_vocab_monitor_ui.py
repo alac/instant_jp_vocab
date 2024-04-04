@@ -166,7 +166,7 @@ class JpVocabUI:
             pass
 
         self.update_ui()
-        root.after(1, lambda: self.update_status(root))
+        root.after(50, lambda: self.update_status(root))
 
     def check_clipboard(self):
         if not self.ui_monitor_is_enabled:
