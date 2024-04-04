@@ -212,6 +212,7 @@ def translate_with_context(context, sentence, temp=.7,
 
     prompt += """
 
+Translate the text between JAPANESE_START and JAPANESE_END into English.
 >CONTEXT_START
 This is a song called This is a song called Bitter Choco Decoration (ロミオとシンデレラ)
 The previous lines are:
@@ -226,6 +227,7 @@ The previous lines are:
 Not to act all high and mighty, not to stand out 
 >ENGLISH_END
 
+Translate the text between JAPANESE_START and JAPANESE_END into English.
 >CONTEXT_START
 Okazaki Tomoya is a third year high school student at Hikarizaka Private High School, leading a life full of resentment. His mother passed away in a car accident when he was young, leading his father, Naoyuki, to resort to alcohol and gambling to cope. This resulted in constant fights between the two until Naoyuki dislocated Tomoya’s shoulder. Unable to play on his basketball team, Tomoya began to distance himself from other people. Ever since he has had a distant relationship with his father, naturally becoming a delinquent over time.
 The previous lines are:
@@ -241,6 +243,7 @@ The previous lines are:
 You: A crate, then?
 >ENGLISH_END
 
+Translate the text between JAPANESE_START and JAPANESE_END into English.
 """
 
     prompt += ">CONTEXT_START\n"
