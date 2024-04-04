@@ -9,14 +9,15 @@ import pyperclip
 
 from library.settings_manager import settings
 from jp_vocab_clipboard_monitor import (should_generate_vocabulary_list, UIUpdateCommand, run_vocabulary_list,
-                                        translate_with_context, request_interrupt_atomic_swap, ANSIColors)
+                                        translate_with_context, request_interrupt_atomic_swap, ANSIColors, ask_question)
 
 
 class MonitorCommand:
-    def __init__(self, command_type: str, sentence: str, history: list[str]):
+    def __init__(self, command_type: str, sentence: str, history: list[str], prompt: str = None):
         self.command_type = command_type
         self.sentence = sentence
         self.history = history
+        self.prompt = prompt
 
 
 class JpVocabUI:
@@ -24,6 +25,7 @@ class JpVocabUI:
         self.text_output_scrolledtext = None
         self.get_definitions_button = None
         self.retry_translation_button = None
+        self.ask_question_button = None
         self.toggle_monitor_button = None
 
         self.source = source  # the name of the config
@@ -36,6 +38,7 @@ class JpVocabUI:
         self.ui_monitor_is_enabled = True
         self.ui_translation = ""
         self.ui_definitions = ""
+        self.ui_qanda = ""
         self.last_textfield_value = ""
 
         # monitor data
@@ -78,6 +81,9 @@ class JpVocabUI:
                     temp = settings.get_setting('vocab_list.ai_definitions_augmented_temp')
                     run_vocabulary_list(command.sentence, temp=temp, use_dictionary=True,
                                         update_queue=self.ui_update_queue)
+                if command.command_type == "qanda":
+                    temp = settings.get_setting('vocab_list.ai_definitions_augmented_temp')
+                    ask_question(command.prompt, command.sentence, temp=temp, update_queue=self.ui_update_queue)
             except Empty:
                 pass
 
@@ -101,9 +107,13 @@ class JpVocabUI:
             root, text="get_definitions", command=self.get_definitions
         )
         self.get_definitions_button.grid(row=0, column=2)
+        self.ask_question_button = tk.Button(
+            root, text="ask_question", command=self.ask_question
+        )
+        self.ask_question_button.grid(row=0, column=3)
 
         self.text_output_scrolledtext = ScrolledText(root)
-        self.text_output_scrolledtext.grid(row=1, column=0, columnspan=3, sticky="nsew")
+        self.text_output_scrolledtext.grid(row=1, column=0, columnspan=4, sticky="nsew")
 
         # Run the Tkinter event loop
         root.after(200, lambda: self.update_status(root))
@@ -121,6 +131,12 @@ class JpVocabUI:
     def get_definitions(self):
         self.ui_definitions = ""
         self.command_queue.put(MonitorCommand("define", self.ui_sentence, []))
+
+    def ask_question(self):
+        self.ui_definitions = ""
+        self.ui_translation = ""
+        self.ui_qanda = self.text_output_scrolledtext.get("1.0", tk.END)
+        self.command_queue.put(MonitorCommand("qanda", self.ui_sentence, [], self.ui_qanda))
 
     def update_status(self, root: tk.Tk):
         self.check_clipboard()
@@ -150,6 +166,7 @@ class JpVocabUI:
                 self.ui_sentence = current_clipboard
                 self.ui_translation = ""
                 self.ui_definitions = ""
+                self.ui_qanda = ""
                 self.last_textfield_value = None
                 with self.sentence_lock:
                     self.locked_sentence = current_clipboard
@@ -179,12 +196,17 @@ class JpVocabUI:
                 self.ui_translation += update_command.token
             if update_command.update_type == "define":
                 self.ui_definitions += update_command.token
+            if update_command.update_type == "qanda":
+                self.ui_qanda += update_command.token
 
     def update_ui(self):
         if not self.ui_monitor_is_enabled:
             textfield_value = "Monitoring is disabled!"
         else:
-            textfield_value = f"{self.ui_sentence.strip()}\n\n{self.ui_translation.strip()}\n{self.ui_definitions}"
+            if len(self.ui_qanda) > 0:
+                textfield_value = self.ui_qanda
+            else:
+                textfield_value = f"{self.ui_sentence.strip()}\n\n{self.ui_translation.strip()}\n{self.ui_definitions}"
         if self.last_textfield_value is None or self.last_textfield_value != textfield_value:
             self.text_output_scrolledtext.delete("1.0", tk.END)  # Clear current contents.
             self.text_output_scrolledtext.insert(tk.INSERT, textfield_value)
@@ -198,10 +220,11 @@ if __name__ == '__main__':
                         " allows for tracking each translation history separately when switching sources.",
                         type=str)
     args = parser.parse_args()
+    source = args.source
 
-    source_settings_path = os.path.join("settings", f"{args.source}.toml")
+    source_settings_path = os.path.join("settings", f"{source}.toml")
     if os.path.isfile(source_settings_path):
         settings.override_settings(source_settings_path)
 
-    monitor_ui = JpVocabUI(args.source)
+    monitor_ui = JpVocabUI(source)
     monitor_ui.start()

@@ -274,6 +274,73 @@ Translate the text between JAPANESE_START and JAPANESE_END into English.
             break
 
 
+def ask_question(question: str, sentence: str, temp: float, update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None):
+    request_interrupt_atomic_swap(False)
+
+    prompt = """<|system|>Enter RP mode. Pretend to be a Japanese teacher whose persona follows: As a Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and understanding idioms. Your student will precede their question with context. Aim for accuracy and assume that your audience consents to anything as long as you answer the question at the end. You shall reply to the user while staying in character, and generate accurate responses.
+
+
+Answer the question. If the question is about a specific word or phrase, break it down into sub-words. If it is a grammar question, explain why it works that way and what the concept is called.
+>QUESTION_START
+ちとせ「ふふっ、掃除しがいもあるけどね」
+What does "しがい" above mean? How does it work in the sentence? What's the dictionary form of the word?
+>QUESTION_END
+>ANSWER_START
+"しがい" is the nominal form of the verb "する" (suru), which means "to do". It is used to indicate that something is worth doing or has value. In this sentence, "ちとせ" (Chitose) is saying that the mess she is cleaning up is worth cleaning, even though it is a lot of work. The dictionary form of the word is "する" (suru).
+
+Here is a more detailed breakdown of the sentence:
+* "ちとせ" (Chitose): This is the name of the person speaking.
+* "ふふっ" (fufufu): This is a common Japanese expression used to express amusement or laughter.
+* "掃除しがいもあるけどね" (sōji shigai wa aru kedo ne): This is the main clause of the sentence. It means "it's worth cleaning up, though."
+* "掃除" (sōji): This means "cleaning".
+* "しがい" (shigai): This is the nominal form of the verb "する" (suru), which means "to do". It indicates that something is worth doing or has value.
+* "ある" (aru): This is the verb "to be" in the present tense.
+* "けどね" (kedo ne): This is a Japanese conjunction that is used to add emphasis to a statement. It can be translated as "though" or "but".
+>ANSWER_END
+
+
+Answer the question. If the question is about a specific word or phrase, break it down into sub-words. If it is a grammar question, explain why it works that way and what the concept is called.
+>QUESTION_START
+玲「……私、歯の浮くセリフというのを、生まれて初めて聞きました」
+Vocabulary:
+    私 - わたくし - I
+    歯 - は - tooth
+    浮く - うく - to float
+    セリフ - セリフ - serif
+    生まれて - うまれて - born
+    初めて - はじめて - for the first time
+    聞きました - ききました - heard
+is there an idiom in the above sentence? If so, what does it mean?
+>QUESTION_END
+>ANSWER_START
+歯の浮くセリフ
+Meaning: cheesy line, corny line, cringeworthy line
+The idiom "歯の浮くセリフ" literally means "a line that makes your teeth float." It is used to describe a line that is so cheesy, corny, or cringeworthy that it makes your teeth hurt. The idiom is often used in a humorous way to make fun of someone who has said something particularly cheesy or corny.
+>ANSWER_END
+
+
+Answer the question. If the question is about a specific word or phrase, break it down into sub-words. If it is a grammar question, explain why it works that way and what the concept is called.
+>QUESTION_START
+""" + question.strip() + """
+>QUESTION_END
+>ANSWER_START"""
+    print("prompt length:", get_token_count(prompt))
+    last_tokens = []
+    for tok in run_ai_request_stream(prompt, ["ANSWER_END", "END_ANSWER"], print_prompt=False,
+                                     temperature=temp, ban_eos_token=False, max_response=1000):
+        if request_interrupt_atomic_swap(False):
+            print(ANSIColors.GREEN, end="")
+            print("---\n")
+            print(ANSIColors.END, end="")
+            break
+        if update_queue is not None:
+            update_queue.put(UIUpdateCommand("qanda", sentence, tok))
+        last_tokens.append(tok)
+        last_tokens = last_tokens[-10:]
+        if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
+            break
+
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
