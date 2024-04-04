@@ -26,19 +26,22 @@ class JpVocabUI:
         self.get_definitions_button = None
         self.retry_translation_button = None
         self.ask_question_button = None
+        self.retry_button = None
         self.toggle_monitor_button = None
 
         self.source = source  # the name of the config
 
         self.command_queue = SimpleQueue()
         self.ui_update_queue = SimpleQueue()
+        self.last_command = None
 
         # ui data
         self.ui_sentence = ""
         self.ui_monitor_is_enabled = True
         self.ui_translation = ""
         self.ui_definitions = ""
-        self.ui_qanda = ""
+        self.ui_question = ""
+        self.ui_response = ""
         self.last_textfield_value = ""
 
         # monitor data
@@ -72,8 +75,9 @@ class JpVocabUI:
             try:
                 with self.sentence_lock:
                     latest_sentence = self.locked_sentence
-                if command.sentence != latest_sentence:
-                    continue
+                    if command.sentence != latest_sentence:
+                        continue
+                    self.last_command = command
                 if command.command_type == "translate":
                     translate_with_context(command.history, command.sentence, update_queue=self.ui_update_queue)
                     self.ui_update_queue.put(UIUpdateCommand("translate", command.sentence, "\n"))
@@ -100,7 +104,7 @@ class JpVocabUI:
         )
         self.toggle_monitor_button.grid(row=0, column=0)
         self.retry_translation_button = tk.Button(
-            root, text="retry_translation", command=self.trigger_translation
+            root, text="get_translation", command=self.trigger_translation
         )
         self.retry_translation_button.grid(row=0, column=1)
         self.get_definitions_button = tk.Button(
@@ -111,9 +115,13 @@ class JpVocabUI:
             root, text="ask_question", command=self.ask_question
         )
         self.ask_question_button.grid(row=0, column=3)
+        self.retry_button = tk.Button(
+            root, text="retry", command=self.retry
+        )
+        self.retry_button.grid(row=0, column=4)
 
         self.text_output_scrolledtext = ScrolledText(root)
-        self.text_output_scrolledtext.grid(row=1, column=0, columnspan=4, sticky="nsew")
+        self.text_output_scrolledtext.grid(row=1, column=0, columnspan=5, sticky="nsew")
 
         # Run the Tkinter event loop
         root.after(200, lambda: self.update_status(root))
@@ -133,10 +141,20 @@ class JpVocabUI:
         self.command_queue.put(MonitorCommand("define", self.ui_sentence, []))
 
     def ask_question(self):
-        self.ui_definitions = ""
-        self.ui_translation = ""
-        self.ui_qanda = self.text_output_scrolledtext.get("1.0", tk.END)
-        self.command_queue.put(MonitorCommand("qanda", self.ui_sentence, [], self.ui_qanda))
+        self.ui_question = self.text_output_scrolledtext.get("1.0", tk.END)
+        self.ui_response = ""
+        self.command_queue.put(MonitorCommand("qanda", self.ui_sentence, [], self.ui_question))
+
+    def retry(self):
+        with self.sentence_lock:
+            if self.last_command:
+                if self.last_command.command_type == "translate":
+                    self.ui_translation = ""
+                if self.last_command.command_type == "define":
+                    self.ui_definitions = ""
+                if self.last_command.command_type == "qanda":
+                    self.ui_response = ""
+                self.command_queue.put(self.last_command)
 
     def update_status(self, root: tk.Tk):
         self.check_clipboard()
@@ -166,7 +184,8 @@ class JpVocabUI:
                 self.ui_sentence = current_clipboard
                 self.ui_translation = ""
                 self.ui_definitions = ""
-                self.ui_qanda = ""
+                self.ui_question = ""
+                self.ui_response = ""
                 self.last_textfield_value = None
                 with self.sentence_lock:
                     self.locked_sentence = current_clipboard
@@ -183,7 +202,7 @@ class JpVocabUI:
                     json.dump(self.history, f, indent=2)
             else:
                 print(ANSIColors.BOLD, end="")
-                print("Skipping sentence: ", current_clipboard)
+                print("Skipping sentence: ", current_clipboard.encode('utf-8', 'ignore').decode('utf-8'))
                 print(ANSIColors.END, end="")
 
         self.previous_clipboard = current_clipboard
@@ -197,14 +216,14 @@ class JpVocabUI:
             if update_command.update_type == "define":
                 self.ui_definitions += update_command.token
             if update_command.update_type == "qanda":
-                self.ui_qanda += update_command.token
+                self.ui_response += update_command.token
 
     def update_ui(self):
         if not self.ui_monitor_is_enabled:
             textfield_value = "Monitoring is disabled!"
         else:
-            if len(self.ui_qanda) > 0:
-                textfield_value = self.ui_qanda
+            if len(self.ui_question) > 0:
+                textfield_value = f"{self.ui_question}\n{self.ui_response}"
             else:
                 textfield_value = f"{self.ui_sentence.strip()}\n\n{self.ui_translation.strip()}\n{self.ui_definitions}"
         if self.last_textfield_value is None or self.last_textfield_value != textfield_value:
