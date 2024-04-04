@@ -233,13 +233,16 @@ class JpVocabUI:
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("source",
-                        help="The name associated with each 'translation history'. Providing a unique name for each"
-                        " allows for tracking each translation history separately when switching sources.",
-                        type=str)
-    args = parser.parse_args()
-    source = args.source
+    source = None
+
+    if not source:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("source",
+                            help="The name associated with each 'translation history'. Providing a unique name for each"
+                            " allows for tracking each translation history separately when switching sources.",
+                            type=str)
+        args = parser.parse_args()
+        source = args.source
 
     source_settings_path = os.path.join("settings", f"{source}.toml")
     if os.path.isfile(source_settings_path):
