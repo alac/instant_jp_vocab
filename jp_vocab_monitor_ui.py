@@ -22,6 +22,7 @@ class MonitorCommand:
 
 class JpVocabUI:
     def __init__(self, source: str):
+        self.tk_root = None
         self.text_output_scrolledtext = None
         self.get_definitions_button = None
         self.retry_translation_button = None
@@ -94,6 +95,7 @@ class JpVocabUI:
     def start_ui(self):
         # Create the root window
         root = tk.Tk()
+        self.tk_root = root
 
         root.geometry("{}x{}+0+0".format(655, 500))
         root.grid_rowconfigure(1, weight=1)
@@ -132,12 +134,14 @@ class JpVocabUI:
 
     def trigger_translation(self):
         self.ui_translation = ""
+        self.ui_response = ""
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
 
     def get_definitions(self):
         self.ui_definitions = ""
+        self.ui_response = ""
         self.command_queue.put(MonitorCommand("define", self.ui_sentence, []))
 
     def ask_question(self):
@@ -174,7 +178,10 @@ class JpVocabUI:
 
         current_clipboard = pyperclip.paste()
         if current_clipboard != self.previous_clipboard:
-            if should_generate_vocabulary_list(sentence=current_clipboard):
+            japanese_detected = should_generate_vocabulary_list(sentence=current_clipboard)
+            is_editing_textfield = (current_clipboard in self.last_textfield_value
+                                    and self.tk_root.focus_get() == self.text_output_scrolledtext)
+            if japanese_detected and not is_editing_textfield:
                 if not any([(current_clipboard in previous or previous in current_clipboard) for previous in
                             self.history]):
                     self.history.append(current_clipboard)
@@ -202,7 +209,10 @@ class JpVocabUI:
                     json.dump(self.history, f, indent=2)
             else:
                 print(ANSIColors.BOLD, end="")
-                print("Skipping sentence: ", current_clipboard.encode('utf-8', 'ignore').decode('utf-8'))
+                if not japanese_detected:
+                    print("Japanese not detected: ", current_clipboard.encode('utf-8', 'ignore').decode('utf-8'))
+                if is_editing_textfield:
+                    print("Skipping textfield edit.")
                 print(ANSIColors.END, end="")
 
         self.previous_clipboard = current_clipboard
@@ -222,7 +232,7 @@ class JpVocabUI:
         if not self.ui_monitor_is_enabled:
             textfield_value = "Monitoring is disabled!"
         else:
-            if len(self.ui_question) > 0:
+            if len(self.ui_response) > 0:
                 textfield_value = f"{self.ui_question}\n{self.ui_response}"
             else:
                 textfield_value = f"{self.ui_sentence.strip()}\n\n{self.ui_translation.strip()}\n{self.ui_definitions}"
