@@ -90,7 +90,8 @@ class JpVocabUI:
                                         update_queue=self.ui_update_queue)
                 if command.command_type == "qanda":
                     temp = settings.get_setting('vocab_list.ai_definitions_augmented_temp')
-                    ask_question(command.prompt, command.sentence, temp=temp, update_queue=self.ui_update_queue)
+                    ask_question(command.prompt, command.sentence, command.history, temp=temp,
+                                 update_queue=self.ui_update_queue)
             except Empty:
                 pass
 
@@ -154,7 +155,7 @@ class JpVocabUI:
         self.ui_question = self.text_output_scrolledtext.get("1.0", tk.END)
         self.ui_response = ""
         self.show_qanda = True
-        self.command_queue.put(MonitorCommand("qanda", self.ui_sentence, [], self.ui_question))
+        self.command_queue.put(MonitorCommand("qanda", self.ui_sentence, self.history[:], self.ui_question))
 
     def retry(self):
         with self.sentence_lock:

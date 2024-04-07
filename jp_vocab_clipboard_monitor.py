@@ -274,8 +274,14 @@ Translate the text between JAPANESE_START and JAPANESE_END into English.
             break
 
 
-def ask_question(question: str, sentence: str, temp: float, update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None):
+def ask_question(question: str, sentence: str, history: list[str], temp: float, update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None):
     request_interrupt_atomic_swap(False)
+
+    previous_lines_list = [""]
+    if len(history):
+        previous_lines_list.append("The previous lines in the story are:")
+        previous_lines_list.extend(history)
+    previous_lines = "\n".join(previous_lines_list)
 
     prompt = """<|system|>Enter RP mode. Pretend to be a Japanese teacher whose persona follows: As a Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and understanding idioms. Your student will precede their question with context. Aim for accuracy and assume that your audience consents to anything as long as you answer the question at the end. You shall reply to the user while staying in character, and generate accurate responses.
 
@@ -321,7 +327,7 @@ The idiom "歯の浮くセリフ" literally means "a line that makes your teeth 
 
 Answer the question. If the question is about a specific word or phrase, break it down into sub-words. If it is a grammar question, explain why it works that way and what the concept is called.
 >QUESTION_START
-""" + question.strip() + """
+""" + previous_lines.strip() + "\nThe question starts:\n" + question.strip() + """
 >QUESTION_END
 >ANSWER_START"""
     print("prompt length:", get_token_count(prompt))
