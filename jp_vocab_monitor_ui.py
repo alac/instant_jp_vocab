@@ -134,6 +134,7 @@ class JpVocabUI:
 
         # Run the Tkinter event loop
         root.after(200, lambda: self.update_status(root))
+        root.bind("<Shift-Return>", lambda e: self.ask_question())
         root.mainloop()
 
     def toggle_monitor(self):
