@@ -29,6 +29,7 @@ class JpVocabUI:
         self.ask_question_button = None
         self.retry_button = None
         self.toggle_monitor_button = None
+        self.switch_view_button = None
 
         self.source = source  # the name of the config
 
@@ -44,6 +45,7 @@ class JpVocabUI:
         self.ui_question = ""
         self.ui_response = ""
         self.last_textfield_value = ""
+        self.show_qanda = False
 
         # monitor data
         self.history = []
@@ -121,9 +123,13 @@ class JpVocabUI:
             root, text="retry", command=self.retry
         )
         self.retry_button.grid(row=0, column=4)
+        self.switch_view_button = tk.Button(
+            root, text="switch_view", command=self.switch_view
+        )
+        self.switch_view_button.grid(row=0, column=5)
 
         self.text_output_scrolledtext = ScrolledText(root)
-        self.text_output_scrolledtext.grid(row=1, column=0, columnspan=5, sticky="nsew")
+        self.text_output_scrolledtext.grid(row=1, column=0, columnspan=6, sticky="nsew")
 
         # Run the Tkinter event loop
         root.after(200, lambda: self.update_status(root))
@@ -134,19 +140,20 @@ class JpVocabUI:
 
     def trigger_translation(self):
         self.ui_translation = ""
-        self.ui_response = ""
+        self.show_qanda = False
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
 
     def get_definitions(self):
         self.ui_definitions = ""
-        self.ui_response = ""
+        self.show_qanda = False
         self.command_queue.put(MonitorCommand("define", self.ui_sentence, []))
 
     def ask_question(self):
         self.ui_question = self.text_output_scrolledtext.get("1.0", tk.END)
         self.ui_response = ""
+        self.show_qanda = True
         self.command_queue.put(MonitorCommand("qanda", self.ui_sentence, [], self.ui_question))
 
     def retry(self):
@@ -158,7 +165,11 @@ class JpVocabUI:
                     self.ui_definitions = ""
                 if self.last_command.command_type == "qanda":
                     self.ui_response = ""
+                self.show_qanda = self.last_command.command_type == "qanda"
                 self.command_queue.put(self.last_command)
+
+    def switch_view(self):
+        self.show_qanda = not self.show_qanda
 
     def update_status(self, root: tk.Tk):
         self.check_clipboard()
@@ -232,8 +243,8 @@ class JpVocabUI:
         if not self.ui_monitor_is_enabled:
             textfield_value = "Monitoring is disabled!"
         else:
-            if len(self.ui_response) > 0:
-                textfield_value = f"{self.ui_question}\n{self.ui_response}"
+            if self.show_qanda:
+                textfield_value = f"{self.ui_question.strip()}\n{self.ui_response}"
             else:
                 textfield_value = f"{self.ui_sentence.strip()}\n\n{self.ui_translation.strip()}\n{self.ui_definitions}"
         if self.last_textfield_value is None or self.last_textfield_value != textfield_value:
