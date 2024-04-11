@@ -28,6 +28,7 @@ class JpVocabUI:
         self.retry_translation_button = None
         self.ask_question_button = None
         self.retry_button = None
+        self.stop_button = None
         self.toggle_monitor_button = None
         self.switch_view_button = None
 
@@ -120,6 +121,10 @@ class JpVocabUI:
             root, text="ask_question", command=self.ask_question
         )
         self.ask_question_button.grid(row=0, column=3)
+        self.stop_button = tk.Button(
+            root, text="stop", command=self.stop
+        )
+        self.stop_button.grid(row=0, column=4)
         self.retry_button = tk.Button(
             root, text="retry", command=self.retry
         )
@@ -169,6 +174,9 @@ class JpVocabUI:
                     self.ui_response = ""
                 self.show_qanda = self.last_command.command_type == "qanda"
                 self.command_queue.put(self.last_command)
+
+    def stop(self):
+        request_interrupt_atomic_swap(True)
 
     def switch_view(self):
         self.show_qanda = not self.show_qanda
