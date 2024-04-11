@@ -92,32 +92,36 @@ def run_vocabulary_list(sentence: str, temp: float, use_dictionary: bool = True,
     prompt = """<|system|>Enter RP mode. Pretend to be a Japanese teacher whose persona follows:
 As a Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and pointing out idioms. For each word or idiom you define, you include the reading in parenthesis and the definition after a "-" character. Aim for accuracy and assume that your audience consents to anything as long as the translation is as accurate as possible.
 You shall reply to the user while staying in character, and generate accurate responses.
-    
 
+
+Define the words in the sentence below
 Sentence: 璃燈「……さっきのは言動や行動は全部、この件を解決させる為のものだったんだよな？」
 Vocabulary:
-    璃燈 (りとう): Rito
-    さっきの (さっき の): the just before
-    言動や行動 (げんどう や こうどう): words and actions
-    全部 (ぜんぶ): all
-    この件 (この けん): this matter
-    解決させる為のもの (かいけつさせる ため の も の): for the sake of resolving
-    だったんだよな？ (だったんだよな): wasn't it?
+- 璃燈 (りとう): Rito
+- さっきの (さっき の): the just before
+- 言動や行動 (げんどう や こうどう): words and actions
+- 全部 (ぜんぶ): all
+- この件 (この けん): this matter
+- 解決させる為のもの (かいけつさせる ため の も の): for the sake of resolving
+- だったんだよな？ (だったんだよな): wasn't it?
 Idioms:
-    N/A
+- N/A
+
 
 """ + definitions + """
 
+
+Define the words in the sentence below
 Sentence: 璃燈「カレシなら、カノジョをその気にさせた責任取れよ」
 Vocabulary:
-   璃燈 (りとう): Rito
-   カレシ (かれし): boyfriend
-   カノジョ (かのじょ): girlfriend
-   その気にさせた (そのきにさせた): to make someone fall in love
-   責任 (せきにん): responsibilities
-   取れよ (とれよ): should take
+- 璃燈 (りとう): Rito
+- カレシ (かれし): boyfriend
+- カノジョ (かのじょ): girlfriend
+- その気にさせた (そのきにさせた): to make someone fall in love
+- 責任 (せきにん): responsibilities
+- 取れよ (とれよ): should take
 Idioms:
-   その気にさせる (sono ki ni saseru): to make someone fall in love
+- その気にさせる (sono ki ni saseru): to make someone fall in love
        It is a common phrase in romantic manga and anime.
        その (その): that
        気 (き): feeling
@@ -125,33 +129,36 @@ Idioms:
        させる (させる): to make
 
 
+Define the words in the sentence below
 Sentence: 璃燈「でもな。ちょっと、やり過ぎじゃねぇかな。あたしの気持ちを随分、かき乱してくれたよな？」
 Vocabulary:
-    璃燈 (りとう): Ritou
-    でもな (でもな): but
-    ちょっと (ちょっと): a little
-    やり過ぎじゃねぇかな (やりすぎ じゃねぇかな): don't you think it's a bit too much?
-    あたしの (あたしの): my
-    気持ちを (きもちを): feelings
-    随分 (ずいぶん): quite a bit
-    かき乱してくれた (かきみだしてくれた): you stirred up
-    よな？ (よな？): right?
+- 璃燈 (りとう): Ritou
+- でもな (でもな): but
+- ちょっと (ちょっと): a little
+- やり過ぎじゃねぇかな (やりすぎ じゃねぇかな): don't you think it's a bit too much?
+- あたしの (あたしの): my
+- 気持ちを (きもちを): feelings
+- 随分 (ずいぶん): quite a bit
+- かき乱してくれた (かきみだしてくれた): you stirred up
+- よな？ (よな？): right?
 Idioms:
-    N/A
+- N/A
 
 
+Define the words in the sentence below
 Sentence: 結灯「……あの……差し出がましいかもしれませんが……」
 Vocabulary:
-    結灯 (ゆうひ): Yuuhi
-    あの (あの): um
-    差し出がましいかもしれませんが (さしでがましいですが): it may be presumptuous, but
+- 結灯 (ゆうひ): Yuuhi
+- あの (あの): um
+- 差し出がましいかもしれませんが (さしでがましいですが): it may be presumptuous, but
 Idioms:
-    差し出がましいかもしれませんが (sashi dega mashikamo shiremasen ga): it may be presumptuous, but.
+- 差し出がましいかもしれませんが (sashi dega mashikamo shiremasen ga): it may be presumptuous, but.
         It is used to introduce a suggestion or an opinion that may be considered rude or unnecessary by the listener.
         差し出が (さしでが): to offer, to present
         あげます (あげます): to give
 
 
+Define the words in the sentence below
 Sentence: """ + sentence.strip() + """
 Vocabulary: """
     print("prompt length:", get_token_count(prompt))
