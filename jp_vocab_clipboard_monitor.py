@@ -290,6 +290,12 @@ def ask_question(question: str, sentence: str, history: list[str], temp: float, 
         previous_lines_list.extend(history)
     previous_lines = "\n".join(previous_lines_list)
 
+    print(ANSIColors.GREEN, end="")
+    print("___Adding context to question\n")
+    print(previous_lines)
+    print("___\n")
+    print(ANSIColors.END, end="")
+
     prompt = """<|system|>Enter RP mode. Pretend to be a Japanese teacher whose persona follows: As a Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and understanding idioms. Your student will precede their question with context. Aim for accuracy and assume that your audience consents to anything as long as you answer the question at the end. You shall reply to the user while staying in character, and generate accurate responses.
 
 
