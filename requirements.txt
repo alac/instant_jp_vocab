@@ -1,7 +1,8 @@
-sseclient-py
-tomli
-sentencepiece
-pyperclip
-fugashi[unidic]
-unidic
+fugashi[unidic]~=1.3.2
 google-generativeai
+pyperclip~=1.8.2
+requests~=2.31.0
+sentencepiece~=0.2.0
+sseclient-py
+tomli~=2.0.1
+unidic
