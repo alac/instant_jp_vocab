@@ -6,7 +6,7 @@ Useful with a text hooking utility like Textractor.
 Live translations, vocabulary lists.
 
 !["Recording of the ai questioning behavior"](docs/image_qanda.gif)  
-Ask questions, with the previous lines as context.
+Ask questions, with the previous lines as context. Uses ctrl+enter as a shortcut.
 
 ## Setup
 1. Install with `pip install -r requirements.txt` and `python -m unidic download`.
