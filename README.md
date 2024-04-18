@@ -2,6 +2,12 @@
 Monitor the clipboard and generate vocabulary lists for Japanese sentences.
 Useful with a text hooking utility like Textractor.
 
+!["Recording of the live translation behavior"](docs/image_translation_definition.gif)
+Live translations, vocabulary lists.
+
+!["Recording of the ai questioning behavior"](docs/image_qanda.gif)
+Ask questions, with the previous lines as context.
+
 ## Setup
 1. Install with `pip install -r requirements.txt` and `python -m unidic download`.
 2. Edit `settings.toml` to enable what you want.
