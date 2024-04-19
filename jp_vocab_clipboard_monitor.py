@@ -1,7 +1,3 @@
-import json
-import os.path
-import pyperclip
-import time
 from queue import SimpleQueue
 from typing import Optional
 from threading import Lock
@@ -38,47 +34,6 @@ def request_interrupt_atomic_swap(new_value: bool) -> bool:
         old_value = REQUEST_INTERRUPT_FLAG
         REQUEST_INTERRUPT_FLAG = new_value
     return old_value
-
-
-def monitor_clipboard(source: str):
-    previous_content = ""
-    history = []
-    history_length = settings.get_setting('vocab_list.ai_translation_history_length')
-
-    cache_file = os.path.join("translation_history", f"{source}.json")
-    if os.path.isfile(cache_file):
-        with open(cache_file, 'r', encoding='utf-8') as f:
-            history = json.load(f)
-
-    while True:
-        current_clipboard = pyperclip.paste()
-        if current_clipboard != previous_content:
-            if should_generate_vocabulary_list(sentence=current_clipboard):
-                for task in settings.get_setting('vocab_list.processing_order'):
-                    # if task == "defs":
-                    #     print(get_definitions_string(current_clipboard))
-                    if task == "ai_defs":
-                        run_vocabulary_list(current_clipboard,
-                                            settings.get_setting('vocab_list.ai_definitions_temp'),
-                                            use_dictionary=False)
-                    if task == "ai_def_rag":
-                        run_vocabulary_list(current_clipboard,
-                                            settings.get_setting('vocab_list.ai_definitions_augmented_temp'),
-                                            use_dictionary=True)
-                    if task == "ai_translation":
-                        print(ANSIColors.GREEN, end="")
-                        translate_with_context(history, current_clipboard)
-                        translate_with_context(history, current_clipboard)
-                        translate_with_context(history, current_clipboard)
-                        print(ANSIColors.END, end="")
-                print("\n\n")
-                if current_clipboard not in history:
-                    history.append(current_clipboard)
-                history = history[-history_length:]
-                with open(cache_file, 'w', encoding='utf-8') as f:
-                    json.dump(history, f, indent=2)
-        previous_content = current_clipboard
-        time.sleep(1.0)
 
 
 def run_vocabulary_list(sentence: str, temp: float, use_dictionary: bool = True,
@@ -358,19 +313,3 @@ Answer the question. If the question is about a specific word or phrase, break i
         last_tokens = last_tokens[-10:]
         if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
             break
-
-
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("source",
-                        help="The name associated with each 'translation history'. Providing a unique name for each"
-                        " allows for tracking each translation history separately when switching sources.",
-                        type=str)
-    args = parser.parse_args()
-
-    source_settings_path = os.path.join("settings", f"{args.source}.toml")
-    if os.path.isfile(source_settings_path):
-        settings.override_settings(source_settings_path)
-
-    monitor_clipboard(args.source)
