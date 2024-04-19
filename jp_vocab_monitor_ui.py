@@ -134,7 +134,7 @@ class JpVocabUI:
         )
         self.switch_view_button.grid(row=0, column=5)
 
-        self.text_output_scrolledtext = ScrolledText(root)
+        self.text_output_scrolledtext = ScrolledText(root, wrap="word")
         self.text_output_scrolledtext.grid(row=1, column=0, columnspan=6, sticky="nsew")
 
         # Run the Tkinter event loop
