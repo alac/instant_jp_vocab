@@ -206,6 +206,7 @@ class JpVocabUI:
                 if not any([(current_clipboard in previous or previous in current_clipboard) for previous in
                             self.history]):
                     self.history.append(current_clipboard)
+                next_sentence = current_clipboard
 
                 request_interrupt_atomic_swap(True)
 
@@ -216,20 +217,20 @@ class JpVocabUI:
                         if left in self.previous_clipboard and right in current_clipboard:
                             (self.previous_clipboard in self.history) and self.history.remove(self.previous_clipboard)
                             (current_clipboard in self.history) and self.history.remove(current_clipboard)
-                            current_clipboard = self.previous_clipboard + current_clipboard
-                            self.history.append(current_clipboard)
+                            next_sentence = self.previous_clipboard + current_clipboard
+                            self.history.append(next_sentence)
 
-                self.ui_sentence = current_clipboard
+                self.ui_sentence = next_sentence
                 self.ui_translation = ""
                 self.ui_definitions = ""
                 self.ui_question = ""
                 self.ui_response = ""
                 self.last_textfield_value = None
                 with self.sentence_lock:
-                    self.locked_sentence = current_clipboard
+                    self.locked_sentence = next_sentence
 
                 print(ANSIColors.BOLD, end="")
-                print("New sentence: ", current_clipboard)
+                print("New sentence: ", next_sentence)
                 print(ANSIColors.END, end="")
 
                 self.trigger_translation()
