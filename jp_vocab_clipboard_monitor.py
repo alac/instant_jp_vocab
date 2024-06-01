@@ -155,7 +155,7 @@ def should_generate_vocabulary_list(sentence):
     if "\n" in sentence:
         print("Found newline.")
         return False
-    jp_grammar_parts = ["。", "」", "「", "は" "に", "が", "？", "―", "…", "！", "』", "『"]
+    jp_grammar_parts = ["。", "」", "「", "は" "に", "が", "？", "か", "―", "…", "！", "』", "『"]
     if [p for p in jp_grammar_parts if p in sentence]:
         return True
     print("No sentence parts detected.")
