@@ -223,6 +223,8 @@ Translate the text between JAPANESE_START and JAPANESE_END into English.
 
     print("Translation: ")
     last_tokens = []
+    if update_queue is not None:
+        update_queue.put(UIUpdateCommand("translate", sentence, "- "))
     for tok in run_ai_request_stream(prompt,
                               [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END", "\n\n\n", ">\n>\n>"],
                               print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100):
@@ -239,7 +241,8 @@ Translate the text between JAPANESE_START and JAPANESE_END into English.
             break
 
 
-def ask_question(question: str, sentence: str, history: list[str], temp: float, update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None):
+def ask_question(question: str, sentence: str, history: list[str], temp: float,
+                 update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None, update_token_key: str = "qanda"):
     request_interrupt_atomic_swap(False)
 
     previous_lines_list = [""]
@@ -311,7 +314,7 @@ Answer the question. If the question is about a specific word or phrase, break i
             print(ANSIColors.END, end="")
             break
         if update_queue is not None:
-            update_queue.put(UIUpdateCommand("qanda", sentence, tok))
+            update_queue.put(UIUpdateCommand(update_token_key, sentence, tok))
         last_tokens.append(tok)
         last_tokens = last_tokens[-10:]
         if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:

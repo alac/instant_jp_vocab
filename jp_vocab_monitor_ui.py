@@ -45,6 +45,7 @@ class JpVocabUI:
         self.ui_sentence = ""
         self.ui_monitor_is_enabled = True
         self.ui_translation = ""
+        self.ui_translation_validation = ""
         self.ui_definitions = ""
         self.ui_question = ""
         self.ui_response = ""
@@ -84,13 +85,25 @@ class JpVocabUI:
                     latest_sentence = self.locked_sentence
                     if command.sentence != latest_sentence:
                         continue
-                    self.last_command = command
+                    if command.command_type != "translation_validation":
+                        self.last_command = command
+
                 if command.command_type == "translate":
-                    translate_with_context(command.history, command.sentence, update_queue=self.ui_update_queue)
+                    translate_with_context(command.history,
+                                           command.sentence,
+                                           update_queue=self.ui_update_queue,
+                                           temp=command.temp)
                     self.ui_update_queue.put(UIUpdateCommand("translate", command.sentence, "\n"))
+                if command.command_type == "translation_validation":
+                    prompt = (f"{self.ui_sentence}\n\n{self.ui_translation}\n\n"
+                              f"Which translation is most accurate? Or are they equivalent?")
+                    command.prompt = prompt
+                    ask_question(command.prompt, command.sentence, command.history, temp=.7,
+                                 update_queue=self.ui_update_queue, update_token_key="translation_validation")
                 if command.command_type == "define":
                     temp = settings.get_setting('vocab_list.ai_definitions_augmented_temp')
-                    run_vocabulary_list(command.sentence, temp=temp, use_dictionary=True,
+                    add_readings = settings.get_setting('vocab_list.ai_definitions_add_readings')
+                    run_vocabulary_list(command.sentence, temp=temp, use_dictionary=add_readings,
                                         update_queue=self.ui_update_queue)
                 if command.command_type == "qanda":
                     temp = settings.get_setting('vocab_list.ai_qanda_temp')
@@ -150,11 +163,12 @@ class JpVocabUI:
 
     def trigger_translation(self):
         self.ui_translation = ""
+        self.ui_translation_validation = ""
         self.show_qanda = False
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:], temp=0))
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
-        self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
+        self.command_queue.put(MonitorCommand("translation_validation", self.ui_sentence, self.history[:], ""))
 
     def get_definitions(self):
         self.ui_definitions = ""
@@ -172,6 +186,7 @@ class JpVocabUI:
             if self.last_command:
                 if self.last_command.command_type == "translate":
                     self.ui_translation = ""
+                    self.ui_translation_validation = ""
                 if self.last_command.command_type == "define":
                     self.ui_definitions = ""
                 if self.last_command.command_type == "qanda":
@@ -260,6 +275,8 @@ class JpVocabUI:
         if update_command.sentence == self.ui_sentence:
             if update_command.update_type == "translate":
                 self.ui_translation += update_command.token
+            if update_command.update_type == "translation_validation":
+                self.ui_translation_validation += update_command.token
             if update_command.update_type == "define":
                 self.ui_definitions += update_command.token
             if update_command.update_type == "qanda":
@@ -272,7 +289,8 @@ class JpVocabUI:
             if self.show_qanda:
                 textfield_value = f"{self.ui_question.strip()}\n{self.ui_response}"
             else:
-                textfield_value = f"{self.ui_sentence.strip()}\n\n{self.ui_translation.strip()}\n{self.ui_definitions}"
+                textfield_value = (f"{self.ui_sentence.strip()}\n\n{self.ui_translation.strip()}\n{self.ui_definitions}"
+                                   f"\n{self.ui_translation_validation}")
         if self.last_textfield_value is None or self.last_textfield_value != textfield_value:
             self.text_output_scrolledtext.delete("1.0", tk.END)  # Clear current contents.
             self.text_output_scrolledtext.insert(tk.INSERT, textfield_value)
