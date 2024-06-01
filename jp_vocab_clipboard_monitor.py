@@ -162,8 +162,11 @@ def should_generate_vocabulary_list(sentence):
     return False
 
 
-def translate_with_context(context, sentence, temp=.7,
+def translate_with_context(context, sentence, temp=None,
                            update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None):
+    if temp is None:
+        temp = settings.get_setting('vocab_list.ai_translation_temp')
+
     request_interrupt_atomic_swap(False)
     prompt = ("<|system|>Enter RP mode. Pretend to be a Japanese translator whose persona follows:"
               " You are a Japanese teacher, working on study material for your students. You take into account"

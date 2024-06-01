@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
 import json
 import pyperclip
+from typing import Optional
 
 from library.settings_manager import settings
 from jp_vocab_clipboard_monitor import (should_generate_vocabulary_list, UIUpdateCommand, run_vocabulary_list,
@@ -13,11 +14,13 @@ from jp_vocab_clipboard_monitor import (should_generate_vocabulary_list, UIUpdat
 
 
 class MonitorCommand:
-    def __init__(self, command_type: str, sentence: str, history: list[str], prompt: str = None):
+    def __init__(self, command_type: str, sentence: str, history: list[str], prompt: str = None,
+                 temp: Optional[float] = None):
         self.command_type = command_type
         self.sentence = sentence
         self.history = history
         self.prompt = prompt
+        self.temp = temp
 
 
 class JpVocabUI:
@@ -90,7 +93,7 @@ class JpVocabUI:
                     run_vocabulary_list(command.sentence, temp=temp, use_dictionary=True,
                                         update_queue=self.ui_update_queue)
                 if command.command_type == "qanda":
-                    temp = settings.get_setting('vocab_list.ai_definitions_augmented_temp')
+                    temp = settings.get_setting('vocab_list.ai_qanda_temp')
                     ask_question(command.prompt, command.sentence, command.history, temp=temp,
                                  update_queue=self.ui_update_queue)
             except Empty:
@@ -148,6 +151,7 @@ class JpVocabUI:
     def trigger_translation(self):
         self.ui_translation = ""
         self.show_qanda = False
+        self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:], temp=0))
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
