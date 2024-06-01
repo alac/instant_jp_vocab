@@ -218,7 +218,8 @@ class JpVocabUI:
                 connectors = [["「", "」",], ["『", "』"]]
                 if self.ui_sentence and self.ui_sentence == self.previous_clipboard:
                     for left, right in connectors:
-                        if left in self.previous_clipboard and right in current_clipboard:
+                        if (left in self.previous_clipboard and right not in self.previous_clipboard
+                                and right in current_clipboard):
                             (self.previous_clipboard in self.history) and self.history.remove(self.previous_clipboard)
                             (current_clipboard in self.history) and self.history.remove(current_clipboard)
                             next_sentence = self.previous_clipboard + current_clipboard
