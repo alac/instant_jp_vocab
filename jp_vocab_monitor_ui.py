@@ -162,6 +162,7 @@ class JpVocabUI:
         self.ui_monitor_is_enabled = not self.ui_monitor_is_enabled
 
     def trigger_translation(self):
+        request_interrupt_atomic_swap(True)
         self.ui_translation = ""
         self.ui_translation_validation = ""
         self.show_qanda = False
@@ -172,11 +173,13 @@ class JpVocabUI:
             self.command_queue.put(MonitorCommand("translation_validation", self.ui_sentence, self.history[:], ""))
 
     def get_definitions(self):
+        request_interrupt_atomic_swap(True)
         self.ui_definitions = ""
         self.show_qanda = False
         self.command_queue.put(MonitorCommand("define", self.ui_sentence, []))
 
     def ask_question(self):
+        request_interrupt_atomic_swap(True)
         self.ui_question = self.text_output_scrolledtext.get("1.0", tk.END)
         self.ui_response = ""
         self.show_qanda = True
