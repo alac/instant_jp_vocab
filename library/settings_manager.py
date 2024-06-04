@@ -49,6 +49,13 @@ class SettingsManager:
         # print(f"found {setting_name} in {source}")
         return setting
 
+    def get_setting_fallback(self, setting_name: str, fallback: Any) -> Any:
+        try:
+            setting, source = self._get_setting(setting_name)
+            return setting
+        except ValueError:
+            return fallback
+
 
 def search_nested_dict(nested_dict: dict, dotted_key: str) -> Any:
     keys = dotted_key.split(".")

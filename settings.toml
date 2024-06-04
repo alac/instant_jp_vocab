@@ -14,8 +14,7 @@ api_key = "Better to put this in user.toml since that won't be visible to git."
 [vocab_list]
 # Suggests readings to the AI. Improves lower quality AI results.
 ai_definitions_add_readings = false
-ai_definitions_augmented_temp = 0.7
-ai_qanda_temp = 0.0
+ai_definitions_temp = 0.7
 # The number of previous clipboard values to send to the AI as context.
 ai_translation_history_length = 15
 # An additional 'context' to send with the AI request.
@@ -26,3 +25,7 @@ Example story data. The main character is the protagonist.
 >STORY_INFO_END
 """
 ai_translation_temp = 0.7
+# Asks the AI to judge which translation was best. Very sketchy.
+enable_ai_translation_validation = false
+ai_qanda_temp = 0.0
+

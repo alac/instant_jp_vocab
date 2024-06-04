@@ -101,7 +101,7 @@ class JpVocabUI:
                     ask_question(command.prompt, command.sentence, command.history, temp=.7,
                                  update_queue=self.ui_update_queue, update_token_key="translation_validation")
                 if command.command_type == "define":
-                    temp = settings.get_setting('vocab_list.ai_definitions_augmented_temp')
+                    temp = settings.get_setting('vocab_list.ai_definitions_temp')
                     add_readings = settings.get_setting('vocab_list.ai_definitions_add_readings')
                     run_vocabulary_list(command.sentence, temp=temp, use_dictionary=add_readings,
                                         update_queue=self.ui_update_queue)
@@ -168,7 +168,8 @@ class JpVocabUI:
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:], temp=0))
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
-        self.command_queue.put(MonitorCommand("translation_validation", self.ui_sentence, self.history[:], ""))
+        if settings.get_setting_fallback('vocab_list.enable_ai_translation_validation', False):
+            self.command_queue.put(MonitorCommand("translation_validation", self.ui_sentence, self.history[:], ""))
 
     def get_definitions(self):
         self.ui_definitions = ""
