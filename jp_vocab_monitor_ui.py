@@ -15,12 +15,13 @@ from jp_vocab_clipboard_monitor import (should_generate_vocabulary_list, UIUpdat
 
 class MonitorCommand:
     def __init__(self, command_type: str, sentence: str, history: list[str], prompt: str = None,
-                 temp: Optional[float] = None):
+                 temp: Optional[float] = None, style: str = None):
         self.command_type = command_type
         self.sentence = sentence
         self.history = history
         self.prompt = prompt
         self.temp = temp
+        self.style = style
 
 
 class JpVocabUI:
@@ -167,8 +168,16 @@ class JpVocabUI:
         self.ui_translation_validation = ""
         self.show_qanda = False
         self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:], temp=0))
-        self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
-        self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:]))
+        self.command_queue.put(MonitorCommand(
+            "translate",
+            self.ui_sentence,
+            self.history[:],
+            style="Aim for a literal translation."))
+        self.command_queue.put(MonitorCommand(
+            "translate",
+            self.ui_sentence,
+            self.history[:],
+            style="Aim for a natural translation."))
         if settings.get_setting_fallback('vocab_list.enable_ai_translation_validation', False):
             self.command_queue.put(MonitorCommand("translation_validation", self.ui_sentence, self.history[:], ""))
 

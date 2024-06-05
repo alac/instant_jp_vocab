@@ -162,7 +162,7 @@ def should_generate_vocabulary_list(sentence):
     return False
 
 
-def translate_with_context(context, sentence, temp=None,
+def translate_with_context(context, sentence, temp=None, style="",
                            update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None):
     if temp is None:
         temp = settings.get_setting('vocab_list.ai_translation_temp')
@@ -208,8 +208,7 @@ The previous lines are:
 You: A crate, then?
 >ENGLISH_END
 
-Translate the text between JAPANESE_START and JAPANESE_END into English.
-"""
+Translate the text between JAPANESE_START and JAPANESE_END into English.""" + f"{style}\n"
 
     prompt += ">CONTEXT_START\n"
     prompt += settings.get_setting('vocab_list.ai_translation_context')
