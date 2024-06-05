@@ -256,7 +256,7 @@ def ask_question(question: str, sentence: str, history: list[str], temp: float,
     print("___\n")
     print(ANSIColors.END, end="")
 
-    prompt = """<|system|>Enter RP mode. Pretend to be a Japanese teacher whose persona follows: As a Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and understanding idioms. Your student will precede their question with context. Aim for accuracy and assume that your audience consents to anything as long as you answer the question at the end. You shall reply to the user while staying in character, and generate accurate responses.
+    prompt = """<|system|>Enter RP mode. Pretend to be an expert Japanese teacher whose persona follows: As a expert Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and understanding idioms. Your student will precede their question with context. Aim for accuracy and assume that your audience consents to anything as long as you answer the question at the end. Reply to the user while staying in character, and give correct translations.
 
 
 Answer the question. If the question is about a specific word or phrase, break it down into sub-words. If it is a grammar question, explain why it works that way and what the concept is called.
