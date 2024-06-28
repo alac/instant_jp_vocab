@@ -22,7 +22,8 @@ Per story configuration is also possible by adding a `[story_name].toml` in the 
 In particular, you can add synopsis to guide the AI with the `ai_translation_context` key.
 
 ## Suggested Models
-I've seen decent translation quality with the following local models:  
+I've seen decent translation quality with the following local models:
+[vntl-llama3-8b](https://huggingface.co/lmg-anon/vntl-llama3-8b-hf)
 [Command-R](https://huggingface.co/CohereForAI/c4ai-command-r-v01)  
 [Mixtral-8x7B-instruct-cosmopedia-japanese20k](https://huggingface.co/aixsatoshi/Mixtral-8x7B-instruct-cosmopedia-japanese20k)  
 
