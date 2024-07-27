@@ -78,7 +78,7 @@ Vocabulary:
 - 責任 (せきにん): responsibilities
 - 取れよ (とれよ): should take
 Idioms:
-- その気にさせる (sono ki ni saseru): to make someone fall in love
+- その気にさせる (その気にさせる): to make someone fall in love
        It is a common phrase in romantic manga and anime.
        その (その): that
        気 (き): feeling
@@ -103,13 +103,29 @@ Idioms:
 
 
 Define the words in the sentence below
+Sentence: 【カメラマン】「えっと、、どこが？　どうってか……その、まずはさぁ～今日は面白い写真なの？」
+Vocabulary:
+-【カメラマン】: Photographer
+- えっと、、 (えっと...): umm, well
+- どこが？ (どこが?): What's wrong?
+- どうってか (どうってか): how to put it
+- その (その): that
+- まずはさぁ～ (まずはさぁ~): first of all
+- 今日は (きょうは): today is
+- 面白い (おもしろい): interesting
+- 写真 (しゃしん): photo
+Idioms:
+- N/A
+
+
+Define the words in the sentence below
 Sentence: 結灯「……あの……差し出がましいかもしれませんが……」
 Vocabulary:
 - 結灯 (ゆうひ): Yuuhi
 - あの (あの): um
 - 差し出がましいかもしれませんが (さしでがましいですが): it may be presumptuous, but
 Idioms:
-- 差し出がましいかもしれませんが (sashi dega mashikamo shiremasen ga): it may be presumptuous, but.
+- 差し出がましいかもしれませんが (差し 出が ましいかも しれません が): it may be presumptuous, but.
         It is used to introduce a suggestion or an opinion that may be considered rude or unnecessary by the listener.
         差し出が (さしでが): to offer, to present
         あげます (あげます): to give
