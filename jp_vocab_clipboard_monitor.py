@@ -167,13 +167,14 @@ def get_definitions_string(sentence: str):
 
 
 def should_generate_vocabulary_list(sentence):
-    if 5 > len(sentence) or 100 < len(sentence):
+    if 5 > len(sentence) or 300 < len(sentence):
         print("Failed length check.")
         return False
     if "\n" in sentence:
         print("Found newline.")
         return False
-    jp_grammar_parts = ["。", "」", "「", "は" "に", "が", "？", "か", "―", "…", "！", "』", "『"]
+    jp_grammar_parts = ["・", '【', "】", "。", "」", "「", "は" "に", "が", "な", "？", "か", "―", "…", "！", "』", "『"]
+    jp_grammar_parts = jp_grammar_parts + "せぞぼたぱび".split()
     if [p for p in jp_grammar_parts if p in sentence]:
         return True
     print("No sentence parts detected.")
