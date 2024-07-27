@@ -182,7 +182,7 @@ def should_generate_vocabulary_list(sentence):
 
 
 def translate_with_context(context, sentence, temp=None, style="",
-                           update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None):
+                           update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None, index: int = 0):
     if temp is None:
         temp = settings.get_setting('vocab_list.ai_translation_temp')
 
@@ -242,7 +242,10 @@ Translate the text between JAPANESE_START and JAPANESE_END into English.""" + f"
     print("Translation: ")
     last_tokens = []
     if update_queue is not None:
-        update_queue.put(UIUpdateCommand("translate", sentence, "- "))
+        if index == 0:
+            update_queue.put(UIUpdateCommand("translate", sentence, "- "))
+        else:
+            update_queue.put(UIUpdateCommand("translate", sentence, f"#{index}. "))
     for tok in run_ai_request_stream(prompt,
                               [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END", "\n\n\n", ">\n>\n>"],
                               print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100):

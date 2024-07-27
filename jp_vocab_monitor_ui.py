@@ -7,6 +7,7 @@ from tkinter.scrolledtext import ScrolledText
 import json
 import pyperclip
 from typing import Optional
+import re
 import time
 
 from library.settings_manager import settings
@@ -18,13 +19,14 @@ CLIPBOARD_CHECK_LATENCY = 250
 
 class MonitorCommand:
     def __init__(self, command_type: str, sentence: str, history: list[str], prompt: str = None,
-                 temp: Optional[float] = None, style: str = None):
+                 temp: Optional[float] = None, style: str = None, index: int = 0):
         self.command_type = command_type
         self.sentence = sentence
         self.history = history
         self.prompt = prompt
         self.temp = temp
         self.style = style
+        self.index = index
 
 
 class JpVocabUI:
@@ -98,7 +100,8 @@ class JpVocabUI:
                     translate_with_context(command.history,
                                            command.sentence,
                                            update_queue=self.ui_update_queue,
-                                           temp=command.temp)
+                                           temp=command.temp,
+                                           index=command.index)
                     self.ui_update_queue.put(UIUpdateCommand("translate", command.sentence, "\n"))
                 if command.command_type == "translation_validation":
                     prompt = (f"{self.ui_sentence}\n\n{self.ui_translation}\n\n"
@@ -172,17 +175,24 @@ class JpVocabUI:
         self.ui_translation = ""
         self.ui_translation_validation = ""
         self.show_qanda = False
-        self.command_queue.put(MonitorCommand("translate", self.ui_sentence, self.history[:], temp=0))
         self.command_queue.put(MonitorCommand(
             "translate",
             self.ui_sentence,
             self.history[:],
-            style="Aim for a literal translation."))
+            temp=0,
+            index=1))
         self.command_queue.put(MonitorCommand(
             "translate",
             self.ui_sentence,
             self.history[:],
-            style="Aim for a natural translation."))
+            style="Aim for a literal translation.",
+            index=2),)
+        self.command_queue.put(MonitorCommand(
+            "translate",
+            self.ui_sentence,
+            self.history[:],
+            style="Aim for a natural translation.",
+            index=3))
         if settings.get_setting_fallback('vocab_list.enable_ai_translation_validation', False):
             self.command_queue.put(MonitorCommand("translation_validation", self.ui_sentence, self.history[:], ""))
 
@@ -316,8 +326,9 @@ class JpVocabUI:
             if self.show_qanda:
                 textfield_value = f"{self.ui_question.strip()}\n{self.ui_response}"
             else:
-                textfield_value = (f"{self.ui_sentence.strip()}\n\n{self.ui_translation.strip()}\n{self.ui_definitions}"
-                                   f"\n{self.ui_translation_validation}")
+                clean_translation = self.ui_translation.strip().replace("\n\n","\n")
+                textfield_value = (f"{self.ui_sentence.strip()}\n\n{clean_translation}\n\n{self.ui_definitions}"
+                                   f"\n\n{self.ui_translation_validation}")
         if self.last_textfield_value is None or self.last_textfield_value != textfield_value:
             self.text_output_scrolledtext.delete("1.0", tk.END)  # Clear current contents.
             self.text_output_scrolledtext.insert(tk.INSERT, textfield_value)
