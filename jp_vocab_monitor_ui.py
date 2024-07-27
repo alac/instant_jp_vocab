@@ -243,6 +243,7 @@ class JpVocabUI:
             return
 
         current_clipboard = pyperclip.paste()
+        current_clipboard = undo_repetition(current_clipboard)
         if current_clipboard != self.previous_clipboard:
             japanese_detected = should_generate_vocabulary_list(sentence=current_clipboard)
             is_editing_textfield = (current_clipboard in self.last_textfield_value
@@ -321,6 +322,31 @@ class JpVocabUI:
             self.text_output_scrolledtext.delete("1.0", tk.END)  # Clear current contents.
             self.text_output_scrolledtext.insert(tk.INSERT, textfield_value)
             self.last_textfield_value = textfield_value
+
+
+def undo_repetition(input_string):
+    # Function to find the repetition count and return the base character
+    def process_group(match):
+        group = match.group(0)
+        count = len(group)
+        char = group[0]
+
+        # Special case for Japanese characters that might be repeated in pairs
+        if len(char.encode('utf-8')) > 1:
+            if count % 2 == 0:
+                return char * 2
+            else:
+                return char
+        else:
+            return char
+
+    # Use regex to find consecutive identical characters, including pairs
+    pattern = r'(.)(\1+|\1)'
+
+    # Apply the process_group function to each match
+    result = re.sub(pattern, process_group, input_string)
+
+    return result
 
 
 if __name__ == '__main__':
