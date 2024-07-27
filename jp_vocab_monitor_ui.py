@@ -7,10 +7,13 @@ from tkinter.scrolledtext import ScrolledText
 import json
 import pyperclip
 from typing import Optional
+import time
 
 from library.settings_manager import settings
 from jp_vocab_clipboard_monitor import (should_generate_vocabulary_list, UIUpdateCommand, run_vocabulary_list,
                                         translate_with_context, request_interrupt_atomic_swap, ANSIColors, ask_question)
+
+CLIPBOARD_CHECK_LATENCY = 250
 
 
 class MonitorCommand:
@@ -41,6 +44,8 @@ class JpVocabUI:
         self.command_queue = SimpleQueue()
         self.ui_update_queue = SimpleQueue()
         self.last_command = None
+
+        self.last_clipboard_ts = 0
 
         # ui data
         self.ui_sentence = ""
@@ -214,7 +219,15 @@ class JpVocabUI:
         self.show_qanda = not self.show_qanda
 
     def update_status(self, root: tk.Tk):
-        self.check_clipboard()
+        current_time_ms = time.time()
+        if current_time_ms - self.last_clipboard_ts > CLIPBOARD_CHECK_LATENCY:
+            try:
+                self.check_clipboard()
+                self.last_clipboard_ts = current_time_ms
+            except pyperclip.PyperclipWindowsException as e:
+                print(ANSIColors.RED, end="")
+                print(e)
+                print(ANSIColors.END, end="")
 
         try:
             while True:
