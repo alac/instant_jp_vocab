@@ -14,7 +14,7 @@ from library.settings_manager import settings
 from jp_vocab_clipboard_monitor import (should_generate_vocabulary_list, UIUpdateCommand, run_vocabulary_list,
                                         translate_with_context, request_interrupt_atomic_swap, ANSIColors, ask_question)
 
-CLIPBOARD_CHECK_LATENCY = 250
+CLIPBOARD_CHECK_LATENCY_MS = 250
 
 
 class MonitorCommand:
@@ -230,7 +230,7 @@ class JpVocabUI:
 
     def update_status(self, root: tk.Tk):
         current_time_ms = time.time()
-        if current_time_ms - self.last_clipboard_ts > CLIPBOARD_CHECK_LATENCY:
+        if (current_time_ms - self.last_clipboard_ts)*1000 > CLIPBOARD_CHECK_LATENCY_MS:
             try:
                 self.check_clipboard()
                 self.last_clipboard_ts = current_time_ms
