@@ -107,16 +107,14 @@ class JpVocabUI:
                     prompt = (f"{self.ui_sentence}\n\n{self.ui_translation}\n\n"
                               f"Which translation is most accurate? Or are they equivalent?")
                     command.prompt = prompt
-                    ask_question(command.prompt, command.sentence, command.history, temp=.7,
+                    ask_question(command.prompt, command.sentence, command.history, temp=command.temp,
                                  update_queue=self.ui_update_queue, update_token_key="translation_validation")
                 if command.command_type == "define":
-                    temp = settings.get_setting('vocab_list.ai_definitions_temp')
                     add_readings = settings.get_setting('vocab_list.ai_definitions_add_readings')
-                    run_vocabulary_list(command.sentence, temp=temp, use_dictionary=add_readings,
+                    run_vocabulary_list(command.sentence, temp=command.temp, use_dictionary=add_readings,
                                         update_queue=self.ui_update_queue)
                 if command.command_type == "qanda":
-                    temp = settings.get_setting('vocab_list.ai_qanda_temp')
-                    ask_question(command.prompt, command.sentence, command.history, temp=temp,
+                    ask_question(command.prompt, command.sentence, command.history, temp=command.temp,
                                  update_queue=self.ui_update_queue)
             except Empty:
                 pass
@@ -185,29 +183,35 @@ class JpVocabUI:
             "translate",
             self.ui_sentence,
             self.history[:],
+            temp=0,
             style="Aim for a literal translation.",
             index=2),)
         self.command_queue.put(MonitorCommand(
             "translate",
             self.ui_sentence,
             self.history[:],
+            temp=0,
             style="Aim for a natural translation.",
             index=3))
         if settings.get_setting_fallback('vocab_list.enable_ai_translation_validation', False):
-            self.command_queue.put(MonitorCommand("translation_validation", self.ui_sentence, self.history[:], ""))
+            self.command_queue.put(MonitorCommand("translation_validation",
+                                                  self.ui_sentence,
+                                                  self.history[:],
+                                                  "",
+                                                  temp=0))
 
     def get_definitions(self):
         request_interrupt_atomic_swap(True)
         self.ui_definitions = ""
         self.show_qanda = False
-        self.command_queue.put(MonitorCommand("define", self.ui_sentence, []))
+        self.command_queue.put(MonitorCommand("define", self.ui_sentence, [], temp=0))
 
     def ask_question(self):
         request_interrupt_atomic_swap(True)
         self.ui_question = self.text_output_scrolledtext.get("1.0", tk.END)
         self.ui_response = ""
         self.show_qanda = True
-        self.command_queue.put(MonitorCommand("qanda", self.ui_sentence, self.history[:], self.ui_question))
+        self.command_queue.put(MonitorCommand("qanda", self.ui_sentence, self.history[:], self.ui_question, temp=0))
 
     def retry(self):
         with self.sentence_lock:
@@ -217,8 +221,10 @@ class JpVocabUI:
                     self.ui_translation_validation = ""
                 if self.last_command.command_type == "define":
                     self.ui_definitions = ""
+                    self.last_command.temp = settings.get_setting('vocab_list.ai_definitions_temp')
                 if self.last_command.command_type == "qanda":
                     self.ui_response = ""
+                    self.last_command.temp = settings.get_setting('vocab_list.ai_qanda_temp')
                 self.show_qanda = self.last_command.command_type == "qanda"
                 self.command_queue.put(self.last_command)
 
@@ -236,6 +242,7 @@ class JpVocabUI:
                 self.last_clipboard_ts = current_time_ms
             except pyperclip.PyperclipWindowsException as e:
                 print(ANSIColors.RED, end="")
+                print("EXCEPTION!")
                 print(e)
                 print(ANSIColors.END, end="")
 
