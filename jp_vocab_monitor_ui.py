@@ -135,17 +135,17 @@ class JpVocabUI:
         self.toggle_monitor_button.pack(side=tk.LEFT)
 
         self.retry_translation_button = tk.Button(
-            buttons_frame, text="get_translation", command=self.trigger_translation
+            buttons_frame, text="retranslate", command=self.trigger_translation
         )
         self.retry_translation_button.pack(side=tk.LEFT)
 
         self.get_definitions_button = tk.Button(
-            buttons_frame, text="get_definitions", command=self.get_definitions
+            buttons_frame, text="define", command=self.get_definitions
         )
         self.get_definitions_button.pack(side=tk.LEFT)
 
         self.ask_question_button = tk.Button(
-            buttons_frame, text="ask_question", command=self.ask_question
+            buttons_frame, text="ask", command=self.ask_question
         )
         self.ask_question_button.pack(side=tk.LEFT)
 
