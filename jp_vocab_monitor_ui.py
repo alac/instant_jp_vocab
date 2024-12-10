@@ -76,49 +76,6 @@ class JpVocabUI:
                 self.history = json.load(f)
         self.history_length = settings.get_setting('vocab_list.ai_translation_history_length')
 
-    def start(self):
-        self.start_processing_thread()
-        self.start_ui()
-
-    def start_processing_thread(self):
-        thread = threading.Thread(target=self.processing_thread, args=(self.command_queue,))
-        thread.daemon = True
-        thread.start()
-
-    def processing_thread(self, queue: SimpleQueue[MonitorCommand]):
-        while True:
-            command = queue.get(block=True)  # type: MonitorCommand
-            try:
-                with self.sentence_lock:
-                    latest_sentence = self.locked_sentence
-                    if command.sentence != latest_sentence:
-                        continue
-                    if command.command_type != "translation_validation":
-                        self.last_command = command
-
-                if command.command_type == "translate":
-                    translate_with_context(command.history,
-                                           command.sentence,
-                                           update_queue=self.ui_update_queue,
-                                           temp=command.temp,
-                                           index=command.index)
-                    self.ui_update_queue.put(UIUpdateCommand("translate", command.sentence, "\n"))
-                if command.command_type == "translation_validation":
-                    prompt = (f"{self.ui_sentence}\n\n{self.ui_translation}\n\n"
-                              f"Which translation is most accurate? Or are they equivalent?")
-                    command.prompt = prompt
-                    ask_question(command.prompt, command.sentence, command.history, temp=command.temp,
-                                 update_queue=self.ui_update_queue, update_token_key="translation_validation")
-                if command.command_type == "define":
-                    add_readings = settings.get_setting('vocab_list.ai_definitions_add_readings')
-                    run_vocabulary_list(command.sentence, temp=command.temp, use_dictionary=add_readings,
-                                        update_queue=self.ui_update_queue)
-                if command.command_type == "qanda":
-                    ask_question(command.prompt, command.sentence, command.history, temp=command.temp,
-                                 update_queue=self.ui_update_queue)
-            except Empty:
-                pass
-
     def start_ui(self):
         # Create the root window
         root = tk.Tk()
@@ -164,6 +121,49 @@ class JpVocabUI:
         root.after(200, lambda: self.update_status(root))
         root.bind("<Shift-Return>", lambda e: self.ask_question())
         root.mainloop()
+
+    def start(self):
+        self.start_processing_thread()
+        self.start_ui()
+
+    def start_processing_thread(self):
+        thread = threading.Thread(target=self.processing_thread, args=(self.command_queue,))
+        thread.daemon = True
+        thread.start()
+
+    def processing_thread(self, queue: SimpleQueue[MonitorCommand]):
+        while True:
+            command = queue.get(block=True)  # type: MonitorCommand
+            try:
+                with self.sentence_lock:
+                    latest_sentence = self.locked_sentence
+                    if command.sentence != latest_sentence:
+                        continue
+                    if command.command_type != "translation_validation":
+                        self.last_command = command
+
+                if command.command_type == "translate":
+                    translate_with_context(command.history,
+                                           command.sentence,
+                                           update_queue=self.ui_update_queue,
+                                           temp=command.temp,
+                                           index=command.index)
+                    self.ui_update_queue.put(UIUpdateCommand("translate", command.sentence, "\n"))
+                if command.command_type == "translation_validation":
+                    prompt = (f"{self.ui_sentence}\n\n{self.ui_translation}\n\n"
+                              f"Which translation is most accurate? Or are they equivalent?")
+                    command.prompt = prompt
+                    ask_question(command.prompt, command.sentence, command.history, temp=command.temp,
+                                 update_queue=self.ui_update_queue, update_token_key="translation_validation")
+                if command.command_type == "define":
+                    add_readings = settings.get_setting('vocab_list.ai_definitions_add_readings')
+                    run_vocabulary_list(command.sentence, temp=command.temp, use_dictionary=add_readings,
+                                        update_queue=self.ui_update_queue)
+                if command.command_type == "qanda":
+                    ask_question(command.prompt, command.sentence, command.history, temp=command.temp,
+                                 update_queue=self.ui_update_queue)
+            except Empty:
+                pass
 
     def toggle_monitor(self):
         self.ui_monitor_is_enabled = not self.ui_monitor_is_enabled
