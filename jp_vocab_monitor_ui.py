@@ -29,6 +29,18 @@ class MonitorCommand:
         self.index = index
 
 
+class HistoryState:
+    def __init__(self, sentence, translation, translation_validation, definitions, question, response,
+                 history):
+        self.ui_sentence = sentence
+        self.ui_translation = translation
+        self.ui_translation_validation = translation_validation
+        self.ui_definitions = definitions
+        self.ui_question = question
+        self.ui_response = response
+        self.history = history
+
+
 class JpVocabUI:
     def __init__(self, source: str):
         self.tk_root = None
@@ -49,15 +61,16 @@ class JpVocabUI:
 
         self.last_clipboard_ts = 0
 
-        # ui data
+        # ui data state
         self.ui_sentence = ""
-        self.ui_monitor_is_enabled = True
         self.ui_translation = ""
         self.ui_translation_validation = ""
         self.ui_definitions = ""
         self.ui_question = ""
         self.ui_response = ""
+        # transient ui state
         self.last_textfield_value = ""
+        self.ui_monitor_is_enabled = True
         self.show_qanda = False
 
         # monitor data
@@ -76,8 +89,10 @@ class JpVocabUI:
                 self.history = json.load(f)
         self.history_length = settings.get_setting('vocab_list.ai_translation_history_length')
 
+        self.history_states = []  # type: list[HistoryState]
+        self.history_states_index = -1
+
     def start_ui(self):
-        # Create the root window
         root = tk.Tk()
         self.tk_root = root
 
@@ -85,34 +100,78 @@ class JpVocabUI:
         root.grid_rowconfigure(1, weight=1)
         root.grid_columnconfigure(0, weight=1)
 
+        # Create menu bar frame
+        menu_bar = tk.Frame(root)
+        menu_bar.grid(row=0, column=0, columnspan=6, sticky="ew")
+        menu_bar.grid_columnconfigure(1, weight=1)  # Make middle section expandable
+
+        # Left side navigation buttons
+        nav_frame = tk.Frame(menu_bar)
+        nav_frame.grid(row=0, column=0, sticky="w")
+
+        prev_button = tk.Button(
+            nav_frame,
+            text="⬅️",
+            command=self.go_to_previous,
+            font=('TkDefaultFont', 12)
+        )
+        prev_button.pack(side=tk.LEFT, padx=2)
+
+        next_button = tk.Button(
+            nav_frame,
+            text="➡️",
+            command=self.go_to_next,
+            font=('TkDefaultFont', 12)
+        )
+        next_button.pack(side=tk.LEFT, padx=2)
+
+        # Middle buttons
+        buttons_frame = tk.Frame(menu_bar)
+        buttons_frame.grid(row=0, column=1, sticky="ew")
+
         self.toggle_monitor_button = tk.Button(
-            root, text="toggle_monitor", command=self.toggle_monitor
+            buttons_frame, text="toggle_monitor", command=self.toggle_monitor
         )
-        self.toggle_monitor_button.grid(row=0, column=0)
+        self.toggle_monitor_button.pack(side=tk.LEFT)
+
         self.retry_translation_button = tk.Button(
-            root, text="get_translation", command=self.trigger_translation
+            buttons_frame, text="get_translation", command=self.trigger_translation
         )
-        self.retry_translation_button.grid(row=0, column=1)
+        self.retry_translation_button.pack(side=tk.LEFT)
+
         self.get_definitions_button = tk.Button(
-            root, text="get_definitions", command=self.get_definitions
+            buttons_frame, text="get_definitions", command=self.get_definitions
         )
-        self.get_definitions_button.grid(row=0, column=2)
+        self.get_definitions_button.pack(side=tk.LEFT)
+
         self.ask_question_button = tk.Button(
-            root, text="ask_question", command=self.ask_question
+            buttons_frame, text="ask_question", command=self.ask_question
         )
-        self.ask_question_button.grid(row=0, column=3)
+        self.ask_question_button.pack(side=tk.LEFT)
+
         self.stop_button = tk.Button(
-            root, text="stop", command=self.stop
+            buttons_frame, text="stop", command=self.stop
         )
-        self.stop_button.grid(row=0, column=4)
+        self.stop_button.pack(side=tk.LEFT)
+
         self.retry_button = tk.Button(
-            root, text="retry", command=self.retry
+            buttons_frame, text="retry", command=self.retry
         )
-        self.retry_button.grid(row=0, column=4)
+        self.retry_button.pack(side=tk.LEFT)
+
         self.switch_view_button = tk.Button(
-            root, text="switch_view", command=self.switch_view
+            buttons_frame, text="switch_view", command=self.switch_view
         )
-        self.switch_view_button.grid(row=0, column=5)
+        self.switch_view_button.pack(side=tk.LEFT)
+
+        # Right side history button
+        history_button = tk.Button(
+            menu_bar,
+            text="📋",
+            command=self.show_history,
+            font=('TkDefaultFont', 12)
+        )
+        history_button.grid(row=0, column=2, sticky="e", padx=2)
 
         self.text_output_scrolledtext = ScrolledText(root, wrap="word")
         self.text_output_scrolledtext.grid(row=1, column=0, columnspan=6, sticky="nsew")
@@ -122,26 +181,42 @@ class JpVocabUI:
         root.bind("<Shift-Return>", lambda e: self.ask_question())
         root.mainloop()
 
-    def start(self):
-        self.start_processing_thread()
-        self.start_ui()
+    # button handlers
 
-    def start_processing_thread(self):
-        thread = threading.Thread(target=self.processing_thread, args=(self.command_queue,))
-        thread.daemon = True
-        thread.start()
+    def go_to_previous(self):
+        if self.history_states_index <= 0:
+            return
+        self.stop()
+        self.save_history_state()
+        self.history_states_index -= 1
+        self.load_history_state_at_index(self.history_states_index)
+        # ui will be updated on the next update_ui tick
 
-    def processing_thread(self, queue: SimpleQueue[MonitorCommand]):
-        while True:
-            command = queue.get(block=True)  # type: MonitorCommand
-            try:
-                with self.sentence_lock:
-                    latest_sentence = self.locked_sentence
-                    if command.sentence != latest_sentence:
-                        continue
-                    if command.command_type != "translation_validation":
-                        self.last_command = command
+    def go_to_next(self):
+        if self.history_states_index < 0:
+            return
+        if (self.history_states_index + 1) > (len(self.history_states) - 1):
+            return
+        self.stop()
+        self.save_history_state()
+        self.history_states_index += 1
+        self.load_history_state_at_index(self.history_states_index)
+        # ui will be updated on the next update_ui tick
 
+    def save_history_state(self):
+        self.history_states[self.history_states_index] = (
+            HistoryState(self.ui_sentence, self.ui_translation, self.ui_translation_validation,
+                         self.ui_definitions, self.ui_question, self.ui_response, self.history[:]))
+
+    def load_history_state_at_index(self, index):
+        history_state = self.history_states[index]  # type: HistoryState
+        self.ui_sentence = history_state.ui_sentence
+        self.ui_translation = history_state.ui_translation
+        self.ui_translation_validation = history_state.ui_translation_validation
+        self.ui_definitions = history_state.ui_definitions
+        self.ui_question = history_state.ui_question
+        self.ui_response = history_state.ui_response
+        self.history = history_state.history
 
     def toggle_monitor(self):
         self.ui_monitor_is_enabled = not self.ui_monitor_is_enabled
@@ -213,7 +288,62 @@ class JpVocabUI:
         self.show_qanda = not self.show_qanda
 
     def show_history(self):
-        pass
+        # Create popup window
+        history_window = tk.Toplevel(self.tk_root)
+        history_window.title("Translation History")
+        history_window.geometry("500x400")
+        history_window.grid_rowconfigure(0, weight=1)
+        history_window.grid_columnconfigure(0, weight=1)
+
+        # Create text area
+        text_area = ScrolledText(history_window, wrap="word")
+        text_area.grid(row=0, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
+
+        # Populate text area with history
+        text_area.insert("1.0", "\n".join(self.history))
+
+        # Create button frame
+        button_frame = tk.Frame(history_window)
+        button_frame.grid(row=1, column=0, columnspan=2, pady=5)
+
+        def save_history():
+            # Get content and split into lines
+            content = text_area.get("1.0", tk.END).strip()
+            new_history = [line.strip() for line in content.split("\n") if line.strip()]
+
+            # Update history
+            self.history = new_history
+
+            # Save to file
+            cache_file = os.path.join("translation_history", f"{self.source}.json")
+            os.makedirs("translation_history", exist_ok=True)
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump(self.history, f, ensure_ascii=False, indent=2)
+
+            history_window.destroy()
+
+        def cancel():
+            history_window.destroy()
+
+        # Create buttons
+        save_button = tk.Button(
+            button_frame,
+            text="Save",
+            command=save_history
+        )
+        save_button.pack(side=tk.LEFT, padx=5)
+
+        cancel_button = tk.Button(
+            button_frame,
+            text="Cancel",
+            command=cancel
+        )
+        cancel_button.pack(side=tk.LEFT, padx=5)
+
+        # Make the window modal
+        history_window.transient(self.tk_root)
+        history_window.grab_set()
+        self.tk_root.wait_window(history_window)
 
     # threading etc
 
@@ -296,10 +426,20 @@ class JpVocabUI:
                             self.history]):
                     self.history.append(current_clipboard)
                 next_sentence = current_clipboard
-
                 request_interrupt_atomic_swap(True)
 
-                # a sentence can be split across lines for _dramatic_ purpose, so unsplit them if possible
+                if self.history_states:
+                    # if the current sentence was the most recent sentence, update its history state before we move on
+                    if self.ui_sentence == self.history_states[len(self.history_states) - 1].ui_sentence:
+                        history_state = HistoryState(self.ui_sentence, self.ui_translation, self.ui_translation_validation,
+                                                     self.ui_definitions, self.ui_question, self.ui_response,
+                                                     self.history[:])
+                        self.history_states[len(self.history_states) - 1] = history_state
+
+                    # since we could be _anywhere_ in history, snap to the latest history
+                    self.history = self.history_states[len(self.history_states) - 1].history
+
+                # a sentence can be split across lines for _dramatic_ purpose, so un-split them if possible
                 connectors = [["「", "」",], ["『", "』"]]
                 if self.ui_sentence and self.ui_sentence == self.previous_clipboard:
                     for left, right in connectors:
@@ -326,6 +466,15 @@ class JpVocabUI:
                 self.trigger_translation()
 
                 self.history = self.history[-self.history_length:]
+
+                # each time we add a new sentence, we add a placeholder for it to HistoryStates
+                # we'll overwrite it when the next sentence comes in, OR when we got back/forward
+                self.history_states.append(
+                    HistoryState(self.ui_sentence, self.ui_translation, self.ui_translation_validation,
+                                 self.ui_definitions, self.ui_question, self.ui_response, self.history[:])
+                )
+                self.history_states_index = len(self.history_states) - 1
+
                 cache_file = os.path.join("translation_history", f"{self.source}.json")
                 with open(cache_file, 'w', encoding='utf-8') as f:
                     json.dump(self.history, f, indent=2)
@@ -359,7 +508,7 @@ class JpVocabUI:
             if self.show_qanda:
                 textfield_value = f"{self.ui_question.strip()}\n{self.ui_response}"
             else:
-                clean_translation = self.ui_translation.strip().replace("\n\n","\n")
+                clean_translation = self.ui_translation.strip().replace("\n\n", "\n")
                 textfield_value = (f"{self.ui_sentence.strip()}\n\n{clean_translation}\n\n{self.ui_definitions}"
                                    f"\n\n{self.ui_translation_validation}")
         if self.last_textfield_value is None or self.last_textfield_value != textfield_value:
@@ -394,20 +543,20 @@ def undo_repetition(input_string):
 
 
 if __name__ == '__main__':
-    source = None
+    source_tag = None
 
-    if not source:
+    if not source_tag:
         parser = argparse.ArgumentParser()
         parser.add_argument("source",
                             help="The name associated with each 'translation history'. Providing a unique name for each"
                             " allows for tracking each translation history separately when switching sources.",
                             type=str)
         args = parser.parse_args()
-        source = args.source
+        source_tag = args.source
 
-    source_settings_path = os.path.join("settings", f"{source}.toml")
+    source_settings_path = os.path.join("settings", f"{source_tag}.toml")
     if os.path.isfile(source_settings_path):
         settings.override_settings(source_settings_path)
 
-    monitor_ui = JpVocabUI(source)
+    monitor_ui = JpVocabUI(source_tag)
     monitor_ui.start()
