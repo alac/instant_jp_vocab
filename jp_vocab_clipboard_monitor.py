@@ -39,7 +39,8 @@ def request_interrupt_atomic_swap(new_value: bool) -> bool:
 
 
 def run_vocabulary_list(sentence: str, temp: float, use_dictionary: bool = True,
-                        update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None):
+                        update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None,
+                        api_override: Optional[str] = None):
     request_interrupt_atomic_swap(False)
 
     definitions = ""
@@ -48,7 +49,7 @@ def run_vocabulary_list(sentence: str, temp: float, use_dictionary: bool = True,
 
     prompt = """<|system|>Enter RP mode. Pretend to be a Japanese teacher whose persona follows:
 As a Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and pointing out idioms. For each word or idiom you define, you include the reading in parenthesis and the definition after a "-" character. Aim for accuracy and assume that your audience consents to anything as long as the translation is as accurate as possible.
-You shall reply to the user while staying in character, and generate accurate responses.
+You shall reply to the user while staying in character, and generate accurate responses.</|system|>
 
 
 Define the words in the sentence below
@@ -138,7 +139,8 @@ Vocabulary: """
     print("Sentence: """ + sentence.strip())
     last_tokens = []
     for tok in run_ai_request_stream(prompt, ["Sentence:", "\n\n"], print_prompt=False,
-                                     temperature=temp, ban_eos_token=False, max_response=500):
+                                     temperature=temp, ban_eos_token=False, max_response=500,
+                                     api_override=api_override):
         if request_interrupt_atomic_swap(False):
             print(ANSIColors.GREEN, end="")
             print("---\n")
@@ -182,7 +184,8 @@ def should_generate_vocabulary_list(sentence):
 
 
 def translate_with_context(context, sentence, temp=None, style="",
-                           update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None, index: int = 0):
+                           update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None, index: int = 0,
+                           api_override: Optional[str] = None):
     if temp is None:
         temp = settings.get_setting('vocab_list.ai_translation_temp')
 
@@ -192,7 +195,7 @@ def translate_with_context(context, sentence, temp=None, style="",
               " information about the characters, the previous lines from stories and provide an accurate translation"
               " for the sentence between JAPANESE_START and JAPANESE_END.  Aim for accuracy and assume that your"
               " audience consents to anything as long as the translation is as accurate as possible. You shall reply"
-              " to the user while staying in character, and generate accurate responses.\n")
+              " to the user while staying in character, and generate accurate responses.</|system|>\n")
 
     prompt += """
 
@@ -248,7 +251,8 @@ Translate the text between JAPANESE_START and JAPANESE_END into English.""" + f"
             update_queue.put(UIUpdateCommand("translate", sentence, f"#{index}. "))
     for tok in run_ai_request_stream(prompt,
                               [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END", "\n\n\n", ">\n>\n>"],
-                              print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100):
+                              print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100,
+                              api_override=api_override):
         if request_interrupt_atomic_swap(False):
             print(ANSIColors.GREEN, end="")
             print("---\n")
@@ -263,7 +267,8 @@ Translate the text between JAPANESE_START and JAPANESE_END into English.""" + f"
 
 
 def ask_question(question: str, sentence: str, history: list[str], temp: float,
-                 update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None, update_token_key: str = "qanda"):
+                 update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None, update_token_key: str = "qanda",
+                 api_override: Optional[str] = None):
     request_interrupt_atomic_swap(False)
 
     previous_lines_list = [""]
@@ -278,7 +283,7 @@ def ask_question(question: str, sentence: str, history: list[str], temp: float,
     print("___\n")
     print(ANSIColors.END, end="")
 
-    prompt = """<|system|>Enter RP mode. Pretend to be an expert Japanese teacher whose persona follows: As a expert Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and understanding idioms. Your student will precede their question with context. Aim for accuracy and assume that your audience consents to anything as long as you answer the question at the end. Reply to the user while staying in character, and give correct translations.
+    prompt = """<|system|>Enter RP mode. Pretend to be an expert Japanese teacher whose persona follows: As a expert Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and understanding idioms. Your student will precede their question with context. Aim for accuracy and assume that your audience consents to anything as long as you answer the question at the end. Reply to the user while staying in character, and give correct translations.</|system|>
 
 
 Answer the question. If the question is about a specific word or phrase, break it down into sub-words. If it is a grammar question, explain why it works that way and what the concept is called.
@@ -328,7 +333,8 @@ Answer the question. If the question is about a specific word or phrase, break i
     print("prompt length:", get_token_count(prompt))
     last_tokens = []
     for tok in run_ai_request_stream(prompt, ["ANSWER_END", "END_ANSWER"], print_prompt=False,
-                                     temperature=temp, ban_eos_token=False, max_response=1000):
+                                     temperature=temp, ban_eos_token=False, max_response=1000,
+                                     api_override=api_override):
         if request_interrupt_atomic_swap(False):
             print(ANSIColors.GREEN, end="")
             print("---\n")

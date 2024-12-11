@@ -19,7 +19,7 @@ CLIPBOARD_CHECK_LATENCY_MS = 250
 
 class MonitorCommand:
     def __init__(self, command_type: str, sentence: str, history: list[str], prompt: str = None,
-                 temp: Optional[float] = None, style: str = None, index: int = 0):
+                 temp: Optional[float] = None, style: str = None, index: int = 0, api_override: Optional[str] = None):
         self.command_type = command_type
         self.sentence = sentence
         self.history = history
@@ -27,6 +27,7 @@ class MonitorCommand:
         self.temp = temp
         self.style = style
         self.index = index
+        self.api_override = api_override
 
 
 class HistoryState:
@@ -92,6 +93,13 @@ class JpVocabUI:
         self.history_states = []  # type: list[HistoryState]
         self.history_states_index = -1
 
+        self.ai_service = None  # type: Optional[tk.StringVar]
+
+    def on_ai_service_change(self, *args):
+        selected_service = self.ai_service.get()
+        # Stub for handling service change
+        print(f"AI service changed to: {selected_service}")
+
     def start_ui(self):
         root = tk.Tk()
         self.tk_root = root
@@ -100,10 +108,53 @@ class JpVocabUI:
         root.grid_rowconfigure(1, weight=1)
         root.grid_columnconfigure(0, weight=1)
 
+        self.ai_service = tk.StringVar()
+        self.ai_service.set(settings.get_setting('ai_settings.api'))  # default value
+        self.ai_service.trace('w', self.on_ai_service_change)
+
+        # Button definitions with emojis and tooltips
+        buttons_config = [
+            {
+                "text": "⏯️",  # play/pause
+                "command": self.toggle_monitor,
+                "tooltip": "Toggle Clipboard Monitor"
+            },
+            {
+                "text": "🔄",  # refresh
+                "command": self.trigger_translation,
+                "tooltip": "Get Translation"
+            },
+            {
+                "text": "📚",  # books
+                "command": self.get_definitions,
+                "tooltip": "Get Definitions"
+            },
+            {
+                "text": "❓",  # question mark
+                "command": self.ask_question,
+                "tooltip": "Ask Question"
+            },
+            {
+                "text": "⏹️",  # stop
+                "command": self.stop,
+                "tooltip": "Stop"
+            },
+            {
+                "text": "🔁",  # repeat
+                "command": self.retry,
+                "tooltip": "Retry"
+            },
+            {
+                "text": "🔀",  # shuffle
+                "command": self.switch_view,
+                "tooltip": "Switch View"
+            },
+        ]
+
         # Create menu bar frame
         menu_bar = tk.Frame(root)
         menu_bar.grid(row=0, column=0, columnspan=6, sticky="ew")
-        menu_bar.grid_columnconfigure(1, weight=1)  # Make middle section expandable
+        menu_bar.grid_columnconfigure(1, weight=1)
 
         # Left side navigation buttons
         nav_frame = tk.Frame(menu_bar)
@@ -115,6 +166,7 @@ class JpVocabUI:
             command=self.go_to_previous,
             font=('TkDefaultFont', 12)
         )
+        self.create_tooltip(prev_button, "Previous Entry")
         prev_button.pack(side=tk.LEFT, padx=2)
 
         next_button = tk.Button(
@@ -123,55 +175,48 @@ class JpVocabUI:
             command=self.go_to_next,
             font=('TkDefaultFont', 12)
         )
+        self.create_tooltip(next_button, "Next Entry")
         next_button.pack(side=tk.LEFT, padx=2)
 
         # Middle buttons
         buttons_frame = tk.Frame(menu_bar)
         buttons_frame.grid(row=0, column=1, sticky="ew")
 
-        self.toggle_monitor_button = tk.Button(
-            buttons_frame, text="toggle_monitor", command=self.toggle_monitor
-        )
-        self.toggle_monitor_button.pack(side=tk.LEFT)
+        for btn_config in buttons_config:
+            btn = tk.Button(
+                buttons_frame,
+                text=btn_config["text"],
+                command=btn_config["command"],
+                font=('TkDefaultFont', 12)
+            )
+            self.create_tooltip(btn, btn_config["tooltip"])
+            btn.pack(side=tk.LEFT, padx=2)
 
-        self.retry_translation_button = tk.Button(
-            buttons_frame, text="retranslate", command=self.trigger_translation
-        )
-        self.retry_translation_button.pack(side=tk.LEFT)
+        # Right side controls frame
+        right_controls = tk.Frame(menu_bar)
+        right_controls.grid(row=0, column=2, sticky="e")
 
-        self.get_definitions_button = tk.Button(
-            buttons_frame, text="define", command=self.get_definitions
-        )
-        self.get_definitions_button.pack(side=tk.LEFT)
+        # AI Service selector
+        ai_label = tk.Label(right_controls, text="AI:")
+        ai_label.pack(side=tk.LEFT, padx=2)
 
-        self.ask_question_button = tk.Button(
-            buttons_frame, text="ask", command=self.ask_question
+        ai_dropdown = tk.OptionMenu(
+            right_controls,
+            self.ai_service,
+            "Oogabooga",
+            "Gemini"
         )
-        self.ask_question_button.pack(side=tk.LEFT)
+        ai_dropdown.pack(side=tk.LEFT, padx=2)
 
-        self.stop_button = tk.Button(
-            buttons_frame, text="stop", command=self.stop
-        )
-        self.stop_button.pack(side=tk.LEFT)
-
-        self.retry_button = tk.Button(
-            buttons_frame, text="retry", command=self.retry
-        )
-        self.retry_button.pack(side=tk.LEFT)
-
-        self.switch_view_button = tk.Button(
-            buttons_frame, text="switch_view", command=self.switch_view
-        )
-        self.switch_view_button.pack(side=tk.LEFT)
-
-        # Right side history button
+        # History button
         history_button = tk.Button(
-            menu_bar,
+            right_controls,
             text="📋",
             command=self.show_history,
             font=('TkDefaultFont', 12)
         )
-        history_button.grid(row=0, column=2, sticky="e", padx=2)
+        self.create_tooltip(history_button, "Translation History")
+        history_button.pack(side=tk.LEFT, padx=2)
 
         self.text_output_scrolledtext = ScrolledText(root, wrap="word")
         self.text_output_scrolledtext.grid(row=1, column=0, columnspan=6, sticky="nsew")
@@ -180,6 +225,25 @@ class JpVocabUI:
         root.after(200, lambda: self.update_status(root))
         root.bind("<Shift-Return>", lambda e: self.ask_question())
         root.mainloop()
+
+    @staticmethod
+    def create_tooltip(widget, text):
+        def show_tooltip(event):
+            tooltip = tk.Toplevel()
+            tooltip.wm_overrideredirect(True)
+            tooltip.wm_geometry(f"+{event.x_root + 10}+{event.y_root + 10}")
+
+            label = tk.Label(tooltip, text=text, background="#ffffe0", relief="solid", borderwidth=1)
+            label.pack()
+
+            def hide_tooltip():
+                tooltip.destroy()
+
+            widget.tooltip = tooltip
+            widget.bind('<Leave>', lambda e: hide_tooltip())
+            tooltip.bind('<Leave>', lambda e: hide_tooltip())
+
+        widget.bind('<Enter>', show_tooltip)
 
     # button handlers
 
@@ -231,40 +295,46 @@ class JpVocabUI:
             self.ui_sentence,
             self.history[:],
             temp=0,
-            index=1))
+            index=1,
+            api_override=self.ai_service.get()))
         self.command_queue.put(MonitorCommand(
             "translate",
             self.ui_sentence,
             self.history[:],
             temp=0,
             style="Aim for a literal translation.",
-            index=2),)
+            index=2,
+            api_override=self.ai_service.get()))
         self.command_queue.put(MonitorCommand(
             "translate",
             self.ui_sentence,
             self.history[:],
             temp=0,
             style="Aim for a natural translation.",
-            index=3))
+            index=3,
+            api_override=self.ai_service.get()))
         if settings.get_setting_fallback('vocab_list.enable_ai_translation_validation', False):
             self.command_queue.put(MonitorCommand("translation_validation",
                                                   self.ui_sentence,
                                                   self.history[:],
                                                   "",
-                                                  temp=0))
+                                                  temp=0,
+                                                  api_override=self.ai_service.get()))
 
     def get_definitions(self):
         request_interrupt_atomic_swap(True)
         self.ui_definitions = ""
         self.show_qanda = False
-        self.command_queue.put(MonitorCommand("define", self.ui_sentence, [], temp=0))
+        self.command_queue.put(MonitorCommand("define", self.ui_sentence, [], temp=0,
+                                              api_override=self.ai_service.get()))
 
     def ask_question(self):
         request_interrupt_atomic_swap(True)
         self.ui_question = self.text_output_scrolledtext.get("1.0", tk.END)
         self.ui_response = ""
         self.show_qanda = True
-        self.command_queue.put(MonitorCommand("qanda", self.ui_sentence, self.history[:], self.ui_question, temp=0))
+        self.command_queue.put(MonitorCommand("qanda", self.ui_sentence, self.history[:], self.ui_question,
+                                              temp=0, api_override=self.ai_service.get()))
 
     def retry(self):
         with self.sentence_lock:
@@ -281,7 +351,8 @@ class JpVocabUI:
                 self.show_qanda = self.last_command.command_type == "qanda"
                 self.command_queue.put(self.last_command)
 
-    def stop(self):
+    @staticmethod
+    def stop():
         request_interrupt_atomic_swap(True)
 
     def switch_view(self):
@@ -372,21 +443,23 @@ class JpVocabUI:
                                            command.sentence,
                                            update_queue=self.ui_update_queue,
                                            temp=command.temp,
-                                           index=command.index)
+                                           index=command.index,
+                                           api_override=command.api_override)
                     self.ui_update_queue.put(UIUpdateCommand("translate", command.sentence, "\n"))
                 if command.command_type == "translation_validation":
                     prompt = (f"{self.ui_sentence}\n\n{self.ui_translation}\n\n"
                               f"Which translation is most accurate? Or are they equivalent?")
                     command.prompt = prompt
                     ask_question(command.prompt, command.sentence, command.history, temp=command.temp,
-                                 update_queue=self.ui_update_queue, update_token_key="translation_validation")
+                                 update_queue=self.ui_update_queue, update_token_key="translation_validation",
+                                 api_override=command.api_override)
                 if command.command_type == "define":
                     add_readings = settings.get_setting('vocab_list.ai_definitions_add_readings')
                     run_vocabulary_list(command.sentence, temp=command.temp, use_dictionary=add_readings,
-                                        update_queue=self.ui_update_queue)
+                                        update_queue=self.ui_update_queue, api_override=command.api_override)
                 if command.command_type == "qanda":
                     ask_question(command.prompt, command.sentence, command.history, temp=command.temp,
-                                 update_queue=self.ui_update_queue)
+                                 update_queue=self.ui_update_queue, api_override=command.api_override)
             except Empty:
                 pass
 

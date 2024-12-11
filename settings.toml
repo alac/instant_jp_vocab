@@ -1,6 +1,6 @@
 [ai_settings]
-# oobabooga_api or gemini_pro
-api = "oobabooga_api"
+# Oogabooga or Gemini
+api = "Oogabooga"
 
 [oobabooga_api]
 request_url = 'http://127.0.0.1:5000/v1/completions'
@@ -10,6 +10,8 @@ preset_name = 'none'
 
 [gemini_pro_api]
 api_key = "Better to put this in user.toml since that won't be visible to git."
+# pick one of the values from https://ai.google.dev/gemini-api/docs/models/gemini
+api_model = "gemini-1.5-flash"
 
 [vocab_list]
 # Suggests readings to the AI. Improves lower quality AI results.

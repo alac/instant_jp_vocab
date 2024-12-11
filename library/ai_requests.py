@@ -3,7 +3,7 @@ import json
 import os
 from typing import Optional
 import sseclient
-import google.generativeai as google_gen_ai
+import google.generativeai as google_genai
 
 from library.settings_manager import settings, ROOT_FOLDER
 from library.token_count import get_token_count
@@ -28,14 +28,17 @@ def run_ai_request(prompt: str, custom_stopping_strings: Optional[list[str]] = N
 
 
 def run_ai_request_stream(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
-                          max_response: int = 1536, ban_eos_token: bool = True, print_prompt=True):
+                          max_response: int = 1536, ban_eos_token: bool = True, print_prompt=True,
+                          api_override: Optional[str] = None):
     api_choice = settings.get_setting('ai_settings.api')
+    if api_override:
+        api_choice = api_override
     match api_choice:
-        case "oobabooga_api":
+        case "Oogabooga":
             for tok in run_ai_request_ooba(prompt, custom_stopping_strings, temperature, max_response, ban_eos_token,
                                            print_prompt):
                 yield tok
-        case "gemini_pro":
+        case "Gemini":
             yield run_ai_request_gemini_pro(prompt, custom_stopping_strings, temperature, max_response)
         case _:
             raise ValueError(f"{api_choice} is unsupported for the setting ai_settings.api")
@@ -118,19 +121,23 @@ def run_ai_request_ooba(prompt: str, custom_stopping_strings: Optional[list[str]
 
 def run_ai_request_gemini_pro(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
                               max_response: int = 1536):
-    google_gen_ai.configure(api_key=settings.get_setting('gemini_pro_api.api_key'))
-    model = google_gen_ai.GenerativeModel('gemini-pro')
-    generation_config = google_gen_ai.types.GenerationConfig()
-    generation_config.stop_sequences = custom_stopping_strings
-    generation_config.max_output_tokens = max_response
-    generation_config.temperature = temperature
-    safety_options = {
-        google_gen_ai.types.HarmCategory.HARM_CATEGORY_HARASSMENT: google_gen_ai.types.HarmBlockThreshold.BLOCK_NONE,
-        google_gen_ai.types.HarmCategory.HARM_CATEGORY_HATE_SPEECH: google_gen_ai.types.HarmBlockThreshold.BLOCK_NONE,
-        google_gen_ai.types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT:
-            google_gen_ai.types.HarmBlockThreshold.BLOCK_NONE,
-        google_gen_ai.types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT:
-            google_gen_ai.types.HarmBlockThreshold.BLOCK_NONE,
-    }
-    response = model.generate_content(prompt, generation_config=generation_config, safety_settings=safety_options)
+    prompt = ("Respond directly with only the requested information. "
+              "Do not add any conversational elements, greetings, or explanations. "
+              "You are a translation engine. " + prompt)
+    google_genai.configure(api_key=settings.get_setting('gemini_pro_api.api_key'))
+    model = google_genai.GenerativeModel(settings.get_setting('gemini_pro_api.api_model'),
+                                         # Lower safety settings since we're processing public YouTube content
+                                         safety_settings={
+                                              "harassment": "block_none",
+                                              "hate_speech": "block_none",
+                                              "sexually_explicit": "block_none",
+                                              "dangerous": "block_none",
+                                         },
+                                         # Add generation config
+                                         generation_config={
+                                              "temperature": temperature,
+                                              "stop_sequences": custom_stopping_strings,
+                                              "max_output_tokens": max_response,
+                                         })
+    response = model.generate_content(prompt)
     return response.text
