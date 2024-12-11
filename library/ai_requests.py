@@ -8,6 +8,9 @@ import google.generativeai as google_genai
 from library.settings_manager import settings, ROOT_FOLDER
 from library.token_count import get_token_count
 
+AI_SERVICE_OOBABOOGA = "Oogabooga"
+AI_SERVICE_GEMINI = "Gemini"
+
 
 class EmptyResponseException(ValueError):
     pass

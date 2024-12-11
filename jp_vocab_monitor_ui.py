@@ -13,6 +13,8 @@ import time
 from library.settings_manager import settings
 from jp_vocab_clipboard_monitor import (should_generate_vocabulary_list, UIUpdateCommand, run_vocabulary_list,
                                         translate_with_context, request_interrupt_atomic_swap, ANSIColors, ask_question)
+from library.ai_requests import AI_SERVICE_GEMINI, AI_SERVICE_OOBABOOGA
+
 
 CLIPBOARD_CHECK_LATENCY_MS = 250
 
@@ -95,7 +97,7 @@ class JpVocabUI:
 
         self.ai_service = None  # type: Optional[tk.StringVar]
 
-    def on_ai_service_change(self, *args):
+    def on_ai_service_change(self):
         selected_service = self.ai_service.get()
         # Stub for handling service change
         print(f"AI service changed to: {selected_service}")
@@ -203,8 +205,8 @@ class JpVocabUI:
         ai_dropdown = tk.OptionMenu(
             right_controls,
             self.ai_service,
-            "Oogabooga",
-            "Gemini"
+            AI_SERVICE_OOBABOOGA,
+            AI_SERVICE_GEMINI
         )
         ai_dropdown.pack(side=tk.LEFT, padx=2)
 
@@ -297,29 +299,30 @@ class JpVocabUI:
             temp=0,
             index=1,
             api_override=self.ai_service.get()))
-        self.command_queue.put(MonitorCommand(
-            "translate",
-            self.ui_sentence,
-            self.history[:],
-            temp=0,
-            style="Aim for a literal translation.",
-            index=2,
-            api_override=self.ai_service.get()))
-        self.command_queue.put(MonitorCommand(
-            "translate",
-            self.ui_sentence,
-            self.history[:],
-            temp=0,
-            style="Aim for a natural translation.",
-            index=3,
-            api_override=self.ai_service.get()))
-        if settings.get_setting_fallback('vocab_list.enable_ai_translation_validation', False):
-            self.command_queue.put(MonitorCommand("translation_validation",
-                                                  self.ui_sentence,
-                                                  self.history[:],
-                                                  "",
-                                                  temp=0,
-                                                  api_override=self.ai_service.get()))
+        if self.ai_service.get() == AI_SERVICE_OOBABOOGA:
+            self.command_queue.put(MonitorCommand(
+                "translate",
+                self.ui_sentence,
+                self.history[:],
+                temp=0,
+                style="Aim for a literal translation.",
+                index=2,
+                api_override=self.ai_service.get()))
+            self.command_queue.put(MonitorCommand(
+                "translate",
+                self.ui_sentence,
+                self.history[:],
+                temp=0,
+                style="Aim for a natural translation.",
+                index=3,
+                api_override=self.ai_service.get()))
+            if settings.get_setting_fallback('vocab_list.enable_ai_translation_validation', False):
+                self.command_queue.put(MonitorCommand("translation_validation",
+                                                      self.ui_sentence,
+                                                      self.history[:],
+                                                      "",
+                                                      temp=0,
+                                                      api_override=self.ai_service.get()))
 
     def get_definitions(self):
         request_interrupt_atomic_swap(True)
@@ -504,9 +507,9 @@ class JpVocabUI:
                 if self.history_states:
                     # if the current sentence was the most recent sentence, update its history state before we move on
                     if self.ui_sentence == self.history_states[len(self.history_states) - 1].ui_sentence:
-                        history_state = HistoryState(self.ui_sentence, self.ui_translation, self.ui_translation_validation,
-                                                     self.ui_definitions, self.ui_question, self.ui_response,
-                                                     self.history[:])
+                        history_state = HistoryState(self.ui_sentence, self.ui_translation,
+                                                     self.ui_translation_validation, self.ui_definitions,
+                                                     self.ui_question, self.ui_response, self.history[:])
                         self.history_states[len(self.history_states) - 1] = history_state
 
                     # since we could be _anywhere_ in history, snap to the latest history
