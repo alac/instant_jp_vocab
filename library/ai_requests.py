@@ -42,7 +42,8 @@ def run_ai_request_stream(prompt: str, custom_stopping_strings: Optional[list[st
                                            print_prompt):
                 yield tok
         case "Gemini":
-            yield run_ai_request_gemini_pro(prompt, custom_stopping_strings, temperature, max_response)
+            for chunk in run_ai_request_gemini_pro(prompt, custom_stopping_strings, temperature, max_response):
+                yield chunk
         case _:
             raise ValueError(f"{api_choice} is unsupported for the setting ai_settings.api")
 
@@ -142,5 +143,8 @@ def run_ai_request_gemini_pro(prompt: str, custom_stopping_strings: Optional[lis
                                               "stop_sequences": custom_stopping_strings,
                                               "max_output_tokens": max_response,
                                          })
-    response = model.generate_content(prompt)
-    return response.text
+    response = model.generate_content(prompt, stream=True)
+
+    for chunk in response:
+        if chunk.text:
+            yield chunk.text

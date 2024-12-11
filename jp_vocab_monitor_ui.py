@@ -97,7 +97,7 @@ class JpVocabUI:
 
         self.ai_service = None  # type: Optional[tk.StringVar]
 
-    def on_ai_service_change(self):
+    def on_ai_service_change(self, *args):
         selected_service = self.ai_service.get()
         # Stub for handling service change
         print(f"AI service changed to: {selected_service}")
