@@ -36,16 +36,15 @@ def run_ai_request_stream(prompt: str, custom_stopping_strings: Optional[list[st
     api_choice = settings.get_setting('ai_settings.api')
     if api_override:
         api_choice = api_override
-    match api_choice:
-        case "Oogabooga":
-            for tok in run_ai_request_ooba(prompt, custom_stopping_strings, temperature, max_response, ban_eos_token,
-                                           print_prompt):
-                yield tok
-        case "Gemini":
-            for chunk in run_ai_request_gemini_pro(prompt, custom_stopping_strings, temperature, max_response):
-                yield chunk
-        case _:
-            raise ValueError(f"{api_choice} is unsupported for the setting ai_settings.api")
+    if api_choice == AI_SERVICE_OOBABOOGA:
+        for tok in run_ai_request_ooba(prompt, custom_stopping_strings, temperature, max_response, ban_eos_token,
+                                       print_prompt):
+            yield tok
+    elif api_choice == AI_SERVICE_GEMINI:
+        for chunk in run_ai_request_gemini_pro(prompt, custom_stopping_strings, temperature, max_response):
+            yield chunk
+    else:
+        raise ValueError(f"{api_choice} is unsupported for the setting ai_settings.api")
 
 
 def run_ai_request_ooba(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
