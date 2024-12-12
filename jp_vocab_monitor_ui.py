@@ -1,18 +1,20 @@
-import argparse
-import threading
 from queue import SimpleQueue, Empty
-import os.path
-import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
-import json
-import pyperclip
 from typing import Optional
+import argparse
+import azure.cognitiveservices.speech as speechsdk
+import json
+import os
+import os.path
+import pyperclip
 import re
+import threading
 import time
+import tkinter as tk
 
-from library.settings_manager import settings
 from jp_vocab_clipboard_monitor import (should_generate_vocabulary_list, UIUpdateCommand, run_vocabulary_list,
                                         translate_with_context, request_interrupt_atomic_swap, ANSIColors, ask_question)
+from library.settings_manager import settings
 from library.ai_requests import AI_SERVICE_GEMINI, AI_SERVICE_OOBABOOGA
 
 
@@ -122,7 +124,12 @@ class JpVocabUI:
                 "tooltip": "Toggle Clipboard Monitor"
             },
             {
-                "text": "🔄",  # refresh
+                "text": "⏹️",  # stop
+                "command": self.stop,
+                "tooltip": "Interrupt AI Request"
+            },
+            {
+                "text": "🗣️",  # Speaking Head
                 "command": self.trigger_translation,
                 "tooltip": "Get Translation"
             },
@@ -137,9 +144,9 @@ class JpVocabUI:
                 "tooltip": "Ask Question"
             },
             {
-                "text": "⏹️",  # stop
-                "command": self.stop,
-                "tooltip": "Stop"
+                "text": "🔊",  # Speaker
+                "command": self.play_tts,
+                "tooltip": "Listen"
             },
             {
                 "text": "🔁",  # repeat
@@ -338,6 +345,23 @@ class JpVocabUI:
         self.show_qanda = True
         self.command_queue.put(MonitorCommand("qanda", self.ui_sentence, self.history[:], self.ui_question,
                                               temp=0, api_override=self.ai_service.get()))
+
+    def play_tts(self):
+        speech_config = speechsdk.SpeechConfig(subscription=settings.get_setting('azure_tts.speech_key'),
+                                               region=settings.get_setting('azure_tts.speech_region'))
+        audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
+        speech_config.speech_synthesis_voice_name = settings.get_setting('azure_tts.speech_voice')
+
+        speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+        speech_synthesis_result = speech_synthesizer.speak_text_async(self.ui_sentence).get()
+
+        if speech_synthesis_result.reason == speechsdk.ResultReason.Canceled:
+            cancellation_details = speech_synthesis_result.cancellation_details
+            print("Speech synthesis canceled: {}".format(cancellation_details.reason))
+            if cancellation_details.reason == speechsdk.CancellationReason.Error:
+                if cancellation_details.error_details:
+                    print("Error details: {}".format(cancellation_details.error_details))
+                    print("Did you set the azure_tts speech resource key and region values?")
 
     def retry(self):
         with self.sentence_lock:

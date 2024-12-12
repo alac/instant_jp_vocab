@@ -13,6 +13,22 @@ api_key = "Better to put this in user.toml since that won't be visible to git."
 # pick one of the values from https://ai.google.dev/gemini-api/docs/models/gemini
 api_model = "gemini-1.5-flash"
 
+[azure_tts]
+# Azure has a generous speech synthesis free plan
+# Follow the instructions here to setup an account: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/get-started-text-to-speech?tabs=windows%2Cterminal&pivots=programming-language-python#prerequisites
+speech_key = "Better to put this in user.toml since that won't be visible to git."
+speech_region = "Better to put this in user.toml since that won't be visible to git."
+# Provided JP voices are:
+#ja-JP-NanamiNeural
+#ja-JP-KeitaNeural
+#ja-JP-AoiNeural
+#ja-JP-DaichiNeural
+#ja-JP-MayuNeural
+#ja-JP-NaokiNeural
+#ja-JP-ShioriNeural
+#ja-JP-MasaruMultilingualNeural
+speech_voice = "ja-JP-KeitaNeural"
+
 [vocab_list]
 # Suggests readings to the AI. Improves lower quality AI results.
 ai_definitions_add_readings = false
