@@ -489,6 +489,8 @@ class JpVocabUI:
                                  update_queue=self.ui_update_queue, api_override=command.api_override)
             except Empty:
                 pass
+            except Exception as e:
+                print(e)
 
     def update_status(self, root: tk.Tk):
         current_time_ms = time.time()
