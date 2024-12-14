@@ -291,6 +291,9 @@ class JpVocabUI:
         self.ui_response = history_state.ui_response
         self.history = history_state.history
 
+        with self.sentence_lock:
+            self.locked_sentence = self.ui_sentence
+
     def toggle_monitor(self):
         self.ui_monitor_is_enabled = not self.ui_monitor_is_enabled
 
