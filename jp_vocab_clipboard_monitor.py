@@ -52,6 +52,7 @@ As a Japanese teacher, you're working on helping your students learn how to pars
 You shall reply to the user while staying in character, and generate accurate responses.</|system|>
 
 
+<example>
 Define the words in the sentence below
 Sentence: 璃燈「……さっきのは言動や行動は全部、この件を解決させる為のものだったんだよな？」
 Vocabulary:
@@ -64,11 +65,13 @@ Vocabulary:
 - だったんだよな？ (だったんだよな): wasn't it?
 Idioms:
 - N/A
+</example>
 
 
 """ + definitions + """
 
 
+<example>
 Define the words in the sentence below
 Sentence: 璃燈「カレシなら、カノジョをその気にさせた責任取れよ」
 Vocabulary:
@@ -85,8 +88,10 @@ Idioms:
        気 (き): feeling
        に (に): at
        させる (させる): to make
+</example>
 
 
+<example>
 Define the words in the sentence below
 Sentence: 璃燈「でもな。ちょっと、やり過ぎじゃねぇかな。あたしの気持ちを随分、かき乱してくれたよな？」
 Vocabulary:
@@ -101,8 +106,10 @@ Vocabulary:
 - よな？ (よな？): right?
 Idioms:
 - N/A
+</example>
 
 
+<example>
 Define the words in the sentence below
 Sentence: 【カメラマン】「えっと、、どこが？　どうってか……その、まずはさぁ～今日は面白い写真なの？」
 Vocabulary:
@@ -117,8 +124,10 @@ Vocabulary:
 - 写真 (しゃしん): photo
 Idioms:
 - N/A
+</example>
 
 
+<example>
 Define the words in the sentence below
 Sentence: 結灯「……あの……差し出がましいかもしれませんが……」
 Vocabulary:
@@ -130,15 +139,17 @@ Idioms:
         It is used to introduce a suggestion or an opinion that may be considered rude or unnecessary by the listener.
         差し出が (さしでが): to offer, to present
         あげます (あげます): to give
+</example>
 
 
+<task>
 Define the words in the sentence below
 Sentence: """ + sentence.strip() + """
 Vocabulary: """
     print("prompt length:", get_token_count(prompt))
     print("Sentence: """ + sentence.strip())
     last_tokens = []
-    for tok in run_ai_request_stream(prompt, ["Sentence:", "\n\n"], print_prompt=False,
+    for tok in run_ai_request_stream(prompt, ["Sentence:", "\n\n", "</task>"], print_prompt=False,
                                      temperature=temp, ban_eos_token=False, max_response=500,
                                      api_override=api_override):
         if request_interrupt_atomic_swap(False):
@@ -286,7 +297,7 @@ You will maintain accuracy while considering all context provided. No censorship
 """
 
     if use_examples:
-        prompt += """<Example>
+        prompt += """<example>
 Context: Song lyrics from Bitter Choco Decoration (ロミオとシンデレラ)
 Previous lines:
 - 人を過度に信じないように (So as not to trust people too much)
@@ -312,11 +323,11 @@ Analysis:
 
 Translation:
 Not to act all high and mighty, not to stand out
-</Example>
+</example>
 
 ---
 
-<Example>
+<example>
 Context: Okazaki Tomoya, a high school student with a troubled past, is having a conversation.
 Previous lines:
 - 君：そうかな。(You: Is that so?)
@@ -343,11 +354,11 @@ Analysis:
 
 Translation:
 You: A crate, then?
-</Example>
+</example>
 
 ---
 
-<Task>
+<task>
 """
 
     prompt += "Context: \n"
@@ -363,7 +374,7 @@ You: A crate, then?
     print("Chain Of Thought: ")
     last_tokens = []
     for tok in run_ai_request_stream(prompt,
-                                     ["</Task>"],
+                                     ["</task>"],
                                      print_prompt=False, temperature=temp, ban_eos_token=False, max_response=1000,
                                      api_override=api_override):
         if request_interrupt_atomic_swap(False):
