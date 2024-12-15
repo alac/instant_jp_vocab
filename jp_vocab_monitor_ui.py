@@ -1,3 +1,4 @@
+from enum import Enum
 from queue import SimpleQueue, Empty
 from tkinter.scrolledtext import ScrolledText
 from typing import Optional
@@ -13,7 +14,8 @@ import time
 import tkinter as tk
 
 from jp_vocab_clipboard_monitor import (should_generate_vocabulary_list, UIUpdateCommand, run_vocabulary_list,
-                                        translate_with_context, request_interrupt_atomic_swap, ANSIColors, ask_question)
+                                        translate_with_context, translate_with_context_cot,
+                                        request_interrupt_atomic_swap, ANSIColors, ask_question)
 from library.settings_manager import settings
 from library.ai_requests import AI_SERVICE_GEMINI, AI_SERVICE_OOBABOOGA
 
@@ -21,9 +23,18 @@ from library.ai_requests import AI_SERVICE_GEMINI, AI_SERVICE_OOBABOOGA
 CLIPBOARD_CHECK_LATENCY_MS = 250
 
 
+class TranslationType(str, Enum):
+    Off = 'Off'
+    Translate = '1x'
+    BestOfThree = '3x'
+    ChainOfThought = 'CoT'
+    TranslateAndChainOfThought = '1x+CoT'
+
+
 class MonitorCommand:
     def __init__(self, command_type: str, sentence: str, history: list[str], prompt: str = None,
-                 temp: Optional[float] = None, style: str = None, index: int = 0, api_override: Optional[str] = None):
+                 temp: Optional[float] = None, style: str = None, index: int = 0, api_override: Optional[str] = None,
+                 update_token_key: Optional[str] = None):
         self.command_type = command_type
         self.sentence = sentence
         self.history = history
@@ -32,6 +43,7 @@ class MonitorCommand:
         self.style = style
         self.index = index
         self.api_override = api_override
+        self.update_token_key = update_token_key
 
 
 class HistoryState:
@@ -98,6 +110,7 @@ class JpVocabUI:
         self.history_states_index = -1
 
         self.ai_service = None  # type: Optional[tk.StringVar]
+        self.translation_style = None  # type: Optional[tk.StringVar]
 
     def on_ai_service_change(self, *args):
         selected_service = self.ai_service.get()
@@ -115,6 +128,9 @@ class JpVocabUI:
         self.ai_service = tk.StringVar()
         self.ai_service.set(settings.get_setting('ai_settings.api'))  # default value
         self.ai_service.trace('w', self.on_ai_service_change)
+
+        self.translation_style = tk.StringVar()
+        self.translation_style.set(TranslationType.Off)  # default value
 
         # Button definitions with emojis and tooltips
         buttons_config = [
@@ -206,9 +222,22 @@ class JpVocabUI:
         right_controls.grid(row=0, column=2, sticky="e")
 
         # AI Service selector
-        ai_label = tk.Label(right_controls, text="AI:")
-        ai_label.pack(side=tk.LEFT, padx=2)
+        translate_label = tk.Label(right_controls, text="Mode:")
+        translate_label.pack(side=tk.LEFT, padx=2)
+        translate_dropdown = tk.OptionMenu(
+            right_controls,
+            self.translation_style,
+            TranslationType.Off,
+            TranslationType.Translate,
+            TranslationType.BestOfThree,
+            TranslationType.ChainOfThought,
+            TranslationType.TranslateAndChainOfThought
+        )
+        translate_dropdown.pack(side=tk.LEFT, padx=2)
 
+        # AI Service selector
+        ai_label = tk.Label(right_controls, text="LLM:")
+        ai_label.pack(side=tk.LEFT, padx=2)
         ai_dropdown = tk.OptionMenu(
             right_controls,
             self.ai_service,
@@ -302,14 +331,25 @@ class JpVocabUI:
         self.ui_translation = ""
         self.ui_translation_validation = ""
         self.show_qanda = False
-        self.command_queue.put(MonitorCommand(
-            "translate",
-            self.ui_sentence,
-            self.history[:],
-            temp=0,
-            index=1,
-            api_override=self.ai_service.get()))
-        if self.ai_service.get() == AI_SERVICE_OOBABOOGA:
+
+        if self.translation_style.get() == TranslationType.Off:
+            return
+        elif self.translation_style.get() == TranslationType.Translate:
+            self.command_queue.put(MonitorCommand(
+                "translate",
+                self.ui_sentence,
+                self.history[:],
+                temp=0,
+                index=1,
+                api_override=self.ai_service.get()))
+        elif self.translation_style.get() == TranslationType.BestOfThree:
+            self.command_queue.put(MonitorCommand(
+                "translate",
+                self.ui_sentence,
+                self.history[:],
+                temp=0,
+                index=1,
+                api_override=self.ai_service.get()))
             self.command_queue.put(MonitorCommand(
                 "translate",
                 self.ui_sentence,
@@ -332,7 +372,31 @@ class JpVocabUI:
                                                       self.history[:],
                                                       "",
                                                       temp=0,
-                                                      api_override=self.ai_service.get()))
+                                                      api_override=self.ai_service.get(),
+                                                      update_token_key="translation_validation"))
+        elif self.translation_style.get() == TranslationType.ChainOfThought:
+            self.command_queue.put(MonitorCommand(
+                "translate_cot",
+                self.ui_sentence,
+                self.history[:],
+                temp=0,
+                api_override=self.ai_service.get(),
+                update_token_key="translate"
+            ))
+        elif self.translation_style.get() == TranslationType.TranslateAndChainOfThought:
+            self.command_queue.put(MonitorCommand(
+                "translate",
+                self.ui_sentence,
+                self.history[:],
+                temp=0,
+                api_override=self.ai_service.get()))
+            self.command_queue.put(MonitorCommand(
+                "translate_cot",
+                self.ui_sentence,
+                self.history[:],
+                temp=0,
+                api_override=self.ai_service.get(),
+                update_token_key="translation_validation"))
 
     def get_definitions(self):
         request_interrupt_atomic_swap(True)
@@ -481,8 +545,16 @@ class JpVocabUI:
                               f"Which translation is most accurate? Or are they equivalent?")
                     command.prompt = prompt
                     ask_question(command.prompt, command.sentence, command.history, temp=command.temp,
-                                 update_queue=self.ui_update_queue, update_token_key="translation_validation",
+                                 update_queue=self.ui_update_queue, update_token_key=command.update_token_key,
                                  api_override=command.api_override)
+                if command.command_type == "translate_cot":
+                    translate_with_context_cot(command.history,
+                                               command.sentence,
+                                               update_queue=self.ui_update_queue,
+                                               temp=command.temp,
+                                               update_token_key=command.update_token_key,
+                                               api_override=command.api_override)
+                    self.ui_update_queue.put(UIUpdateCommand(command.update_token_key, command.sentence, "\n"))
                 if command.command_type == "define":
                     add_readings = settings.get_setting('vocab_list.ai_definitions_add_readings')
                     run_vocabulary_list(command.sentence, temp=command.temp, use_dictionary=add_readings,

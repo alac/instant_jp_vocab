@@ -266,6 +266,119 @@ Translate the text between JAPANESE_START and JAPANESE_END into English.""" + f"
             break
 
 
+def translate_with_context_cot(context, sentence, temp=None,
+                               update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None,
+                               api_override: Optional[str] = None, use_examples: bool = True,
+                               update_token_key: Optional[str] = 'translate'):
+    if temp is None:
+        temp = settings.get_setting('vocab_list.ai_translation_temp')
+
+    request_interrupt_atomic_swap(False)
+
+    prompt = """<|system|>You are a Japanese language expert who follows this systematic translation process:
+1. Analyze the grammatical structure of the input
+2. Identify any idioms, set phrases, or cultural nuances
+3. Consider the context and speaker intentions
+4. Provide an accurate and natural translation
+
+You will maintain accuracy while considering all context provided. No censorship is needed.</|system|>
+
+"""
+
+    if use_examples:
+        prompt += """<Example>
+Context: Song lyrics from Bitter Choco Decoration (ロミオとシンデレラ)
+Previous lines:
+- 人を過度に信じないように (So as not to trust people too much)
+- 愛さないように期待しないように (So as not to love, so as not to expect)
+- かと言って角が立たないように (Yet, so as not to create conflict)
+
+Input:
+気取らぬように目立たぬように
+
+Analysis:
+1. Grammar:
+   • 気取る (to act affected) + ぬ (archaic negative) + ように
+   • 目立つ (to stand out) + ぬ (archaic negative) + ように
+   • Parallel structure with two ～ぬように phrases
+
+2. Idioms/Nuances:
+   • Use of archaic ぬ for poetic effect
+   • ように expressing purpose/intention
+
+3. Context:
+   • Part of series of self-imposed restrictions
+   • Poetic/lyrical register matches song context
+
+Translation:
+Not to act all high and mighty, not to stand out
+</Example>
+
+---
+
+<Example>
+Context: Okazaki Tomoya, a high school student with a troubled past, is having a conversation.
+Previous lines:
+- 君：そうかな。(You: Is that so?)
+- 智代：キューバの荷物じゃないよ。似た響きだけど。(Tomoyo: It's not "Cuba baggage". Similar sound though.)
+- 君：じゃあ小包？(You: A package then?)
+- 智代：それじゃ小さすぎる。(Tomoyo: That's too small.)
+
+Input:
+君：木箱？
+
+Analysis:
+1. Grammar:
+   • 木箱 (wooden box/crate) - simple noun
+   • Question marker (？)
+   • Casual speech level
+
+2. Idioms/Nuances:
+   • Simple guessing question
+   • Casual form matches student-to-student dialogue
+
+3. Context:
+   • Part of guessing game conversation
+   • Progressive size increase in guesses
+
+Translation:
+You: A crate, then?
+</Example>
+
+---
+
+<Task>
+"""
+
+    prompt += "Context: \n"
+    prompt += settings.get_setting('vocab_list.ai_translation_context')
+    if context:
+        prompt += "Previous lines:\n"
+        for line in context:
+            prompt += f"- {line}\n"
+    prompt += "\n\n"
+
+    prompt += f"Input:\n{sentence}\n\nAnalysis:"
+
+    print("Chain Of Thought: ")
+    last_tokens = []
+    for tok in run_ai_request_stream(prompt,
+                                     ["</Task>"],
+                                     print_prompt=False, temperature=temp, ban_eos_token=False, max_response=200,
+                                     api_override=api_override):
+        if request_interrupt_atomic_swap(False):
+            print(ANSIColors.GREEN, end="")
+            print("---\n")
+            print(ANSIColors.END, end="")
+            break
+        if update_queue is not None:
+            update_queue.put(UIUpdateCommand(update_token_key, sentence, tok))
+        last_tokens.append(tok)
+        last_tokens = last_tokens[-10:]
+        if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
+            break
+
+
 def ask_question(question: str, sentence: str, history: list[str], temp: float,
                  update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None, update_token_key: str = "qanda",
                  api_override: Optional[str] = None):

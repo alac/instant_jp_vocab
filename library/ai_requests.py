@@ -17,7 +17,7 @@ class EmptyResponseException(ValueError):
 
 
 def run_ai_request(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
-                   clean_blank_lines: bool = True, max_response: int = 1536, ban_eos_token: bool = True,
+                   clean_blank_lines: bool = True, max_response: int = 2048, ban_eos_token: bool = True,
                    print_prompt=True):
     result = ""
     for tok in run_ai_request_stream(prompt, custom_stopping_strings, temperature, max_response,
@@ -31,7 +31,7 @@ def run_ai_request(prompt: str, custom_stopping_strings: Optional[list[str]] = N
 
 
 def run_ai_request_stream(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
-                          max_response: int = 1536, ban_eos_token: bool = True, print_prompt=True,
+                          max_response: int = 2048, ban_eos_token: bool = True, print_prompt=True,
                           api_override: Optional[str] = None):
     api_choice = settings.get_setting('ai_settings.api')
     if api_override:
@@ -48,7 +48,7 @@ def run_ai_request_stream(prompt: str, custom_stopping_strings: Optional[list[st
 
 
 def run_ai_request_ooba(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
-                        max_response: int = 1536, ban_eos_token: bool = True, print_prompt=True):
+                        max_response: int = 2048, ban_eos_token: bool = True, print_prompt=True):
     request_url = settings.get_setting('oobabooga_api.request_url')
     max_context = settings.get_setting('oobabooga_api.context_length')
     if not custom_stopping_strings:
@@ -108,7 +108,6 @@ def run_ai_request_ooba(prompt: str, custom_stopping_strings: Optional[list[str]
     stream_response = requests.post(request_url, headers=headers, json=data, verify=False, stream=True)
     client = sseclient.SSEClient(stream_response)
 
-    result = ""
     if print_prompt:
         print(data['prompt'], end='')
     with open(os.path.join(ROOT_FOLDER, "response.txt"), "w", encoding='utf-8') as f:
@@ -117,16 +116,15 @@ def run_ai_request_ooba(prompt: str, custom_stopping_strings: Optional[list[str]
             new_text = payload['choices'][0]['text']
             print(new_text, end='')
             f.write(new_text)
-            result += new_text
             yield new_text
     print()
 
 
 def run_ai_request_gemini_pro(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
-                              max_response: int = 1536):
+                              max_response: int = 2048):
     prompt = ("Respond directly with only the requested information. "
               "Do not add any conversational elements, greetings, or explanations. "
-              "You are a translation engine. " + prompt)
+              "Use examples provided as a guide and follow the pattern to complete the task. " + prompt)
     google_genai.configure(api_key=settings.get_setting('gemini_pro_api.api_key'))
     model = google_genai.GenerativeModel(settings.get_setting('gemini_pro_api.api_model'),
                                          # Lower safety settings since we're processing public YouTube content
@@ -144,6 +142,8 @@ def run_ai_request_gemini_pro(prompt: str, custom_stopping_strings: Optional[lis
                                          })
     response = model.generate_content(prompt, stream=True)
 
-    for chunk in response:
-        if chunk.text:
-            yield chunk.text
+    with open(os.path.join(ROOT_FOLDER, "response.txt"), "w", encoding='utf-8') as f:
+        for chunk in response:
+            if chunk.text:
+                f.write(chunk.text)
+                yield chunk.text
