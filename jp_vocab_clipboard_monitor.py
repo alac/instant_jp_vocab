@@ -364,7 +364,7 @@ You: A crate, then?
     last_tokens = []
     for tok in run_ai_request_stream(prompt,
                                      ["</Task>"],
-                                     print_prompt=False, temperature=temp, ban_eos_token=False, max_response=200,
+                                     print_prompt=False, temperature=temp, ban_eos_token=False, max_response=1000,
                                      api_override=api_override):
         if request_interrupt_atomic_swap(False):
             print(ANSIColors.GREEN, end="")
