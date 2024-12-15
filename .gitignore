@@ -2,6 +2,7 @@ user.toml
 response.txt
 translation_history/*
 settings/*
+notes/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
