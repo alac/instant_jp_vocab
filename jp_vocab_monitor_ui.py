@@ -436,6 +436,11 @@ class JpVocabUI:
                 if self.last_command.command_type == "translate":
                     self.ui_translation = ""
                     self.ui_translation_validation = ""
+                if self.last_command.command_type == "translate_cot":
+                    if self.last_command.update_token_key == "translate":
+                        self.ui_translation = ""
+                    elif self.last_command.update_token_key == "translation_validation":
+                        self.ui_translation_validation = ""
                 if self.last_command.command_type == "define":
                     self.ui_definitions = ""
                     self.last_command.temp = settings.get_setting('vocab_list.ai_definitions_temp')
