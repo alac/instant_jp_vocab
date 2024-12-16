@@ -287,13 +287,12 @@ def translate_with_context_cot(context, sentence, temp=None,
     request_interrupt_atomic_swap(False)
 
     prompt = """<|system|>You are a Japanese language expert who follows this systematic translation process:
-1. Analyze the grammatical structure of the input
-2. Identify any idioms, set phrases, or cultural nuances
-3. Consider the context and speaker intentions
+1. Consider the context and speaker intentions
+2. Analyze the grammatical structure with readings
+3. Identify any idioms, set phrases, or cultural nuances
 4. Provide an accurate and natural translation
 
-You will maintain accuracy while considering all context provided. No censorship is needed.</|system|>
-
+You will maintain accuracy while considering all context provided. When gender is ambiguous in Japanese but must be specified in English, you will note this explicitly. No censorship is needed.</|system|>
 """
 
     if use_examples:
@@ -308,24 +307,21 @@ Input:
 気取らぬように目立たぬように
 
 Analysis:
-1. Grammar:
-   • 気取る (to act affected) + ぬ (archaic negative) + ように
-   • 目立つ (to stand out) + ぬ (archaic negative) + ように
-   • Parallel structure with two ～ぬように phrases
-
-2. Idioms/Nuances:
-   • Use of archaic ぬ for poetic effect
-   • ように expressing purpose/intention
-
-3. Context:
+1. Context:
    • Part of series of self-imposed restrictions
    • Poetic/lyrical register matches song context
+
+2. Grammar:
+   • 気取る (きどる) [to act affected] + ぬ (archaic negative) + ように
+   • 目立つ (めだつ) [to stand out] + ぬ (archaic negative) + ように
+
+3. Idioms/Nuances:
+   • Use of archaic ぬ for poetic effect
+   • ように expressing purpose/intention
 
 Translation:
 Not to act all high and mighty, not to stand out
 </example>
-
----
 
 <example>
 Context: Okazaki Tomoya, a high school student with a troubled past, is having a conversation.
@@ -339,22 +335,58 @@ Input:
 君：木箱？
 
 Analysis:
-1. Grammar:
-   • 木箱 (wooden box/crate) - simple noun
-   • Question marker (？)
-   • Casual speech level
-
-2. Idioms/Nuances:
-   • Simple guessing question
-   • Casual form matches student-to-student dialogue
-
-3. Context:
+1. Context:
    • Part of guessing game conversation
    • Progressive size increase in guesses
+   • Speaker identified as Okazaki Tomoya (male)
+
+2. Grammar:
+   • 木箱 (きばこ) [wooden box/crate] - simple noun
+
+3. Idioms/Nuances:
+   • Simple guessing question
+   • Casual form matches student-to-student dialogue
+   • Gender note: Speaker's gender is known from context
 
 Translation:
 You: A crate, then?
 </example>
+
+<example>
+Context: Shōta's mother died a long time ago. Yuka and Misaki are 'competing' to adopt him.
+Previous lines:
+美咲「どう、似合ってる？」
+翔太「へぇ、由香さんが着てたのとデザインは同じなのに着る人で随分印象変わるな」
+美咲「すぐに由香さんと比較してぇ……で、しょう君的にはどっちが似合ってるの？」
+翔太「え、ええっ！？　ええっと……」
+正直、両方似合っているので甲乙つけがたいんだけど……。
+しかし、美咲さんはそれが不満なようでムッとした顔を僕の顔に近付ける。
+美咲「もう、しょう君ったら。ここは、『美咲ママに決まってるよ』って即答しないとダメでしょ」
+翔太「そんなこと言われても、困るよ。それぞれの良さがあるし」
+
+Input:
+美咲「ふむふむ、なるほど。つまり甲乙つけがたいって事ね。ま、一応その答は及第点」
+
+1. Context:
+   • Dialogue between Shōta and Misaki
+   • Misaki is playfully teasing Shōta about comparing her outfit to Yuka's.
+   • Casual, intimate setting.
+2. Grammar:
+   • ふむふむ (fumufumu): Interjection showing thoughtful consideration.
+   • なるほど (naruhodo): Expression of understanding.
+   • つまり (tsumari): Namely, that is to say.
+   • 甲乙つけがたい (kōotsukegaitai): Unable to distinguish between the two; too close to call.
+   • って事ね (tte koto ne): That's what it means, right? (casual)
+   • ま (ma): Well.
+   • 一応 (ichiō): For the time being; tentatively.
+   • その答 (sono kotae): That answer.
+   • 及第点 (kyūditeten): Passing grade; just barely acceptable.
+3. Idioms/Nuances:
+   • ふむふむ and なるほど are common interjections used to show understanding or agreement.
+   • って事ね adds a casual and playful tone.
+   • 及第点 implies that while the answer is acceptable, it's not particularly outstanding.
+Translation:
+Misaki: "Hmm, I see. So you can't decide which one is better, huh? Well, I guess that answer will do for now."</example>
 
 ---
 
