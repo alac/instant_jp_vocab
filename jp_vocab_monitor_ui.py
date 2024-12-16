@@ -25,10 +25,10 @@ CLIPBOARD_CHECK_LATENCY_MS = 250
 
 class TranslationType(str, Enum):
     Off = 'Off'
-    Translate = '1x'
-    BestOfThree = '3x'
-    ChainOfThought = 'CoT'
-    TranslateAndChainOfThought = '1x+CoT'
+    Translate = 'Translate'
+    BestOfThree = 'Best of Three'
+    ChainOfThought = 'With Analysis (CoT)'
+    TranslateAndChainOfThought = 'Post-Hoc Analysis'
 
 
 class MonitorCommand:
@@ -67,7 +67,6 @@ class JpVocabUI:
         self.ask_question_button = None
         self.retry_button = None
         self.stop_button = None
-        self.toggle_monitor_button = None
         self.switch_view_button = None
 
         self.source = source  # the name of the config
@@ -87,7 +86,6 @@ class JpVocabUI:
         self.ui_response = ""
         # transient ui state
         self.last_textfield_value = ""
-        self.ui_monitor_is_enabled = True
         self.show_qanda = False
 
         # monitor data
@@ -122,7 +120,7 @@ class JpVocabUI:
         self.tk_root = root
 
         root.geometry("{}x{}+0+0".format(655, 500))
-        root.grid_rowconfigure(1, weight=1)
+        root.grid_rowconfigure(2, weight=1)
         root.grid_columnconfigure(0, weight=1)
 
         self.ai_service = tk.StringVar()
@@ -135,9 +133,14 @@ class JpVocabUI:
         # Button definitions with emojis and tooltips
         buttons_config = [
             {
-                "text": "⏯️",  # play/pause
-                "command": self.toggle_monitor,
-                "tooltip": "Toggle Clipboard Monitor"
+                "text": "⬅️",
+                "command": self.go_to_previous,
+                "tooltip": "Previous Entry"
+            },
+            {
+                "text": "➡️",
+                "command": self.go_to_next,
+                "tooltip": "Next Entry"
             },
             {
                 "text": "⏹️",  # stop
@@ -145,67 +148,25 @@ class JpVocabUI:
                 "tooltip": "Interrupt AI Request"
             },
             {
-                "text": "🗣️",  # Speaking Head
-                "command": self.trigger_translation,
-                "tooltip": "Get Translation"
-            },
-            {
-                "text": "📚",  # books
-                "command": self.get_definitions,
-                "tooltip": "Get Definitions"
-            },
-            {
-                "text": "❓",  # question mark
-                "command": self.ask_question,
-                "tooltip": "Ask Question"
+                "text": "🔁",  # repeat
+                "command": self.retry,
+                "tooltip": "Retry"
             },
             {
                 "text": "🔊",  # Speaker
                 "command": self.play_tts,
                 "tooltip": "Listen"
             },
-            {
-                "text": "🔁",  # repeat
-                "command": self.retry,
-                "tooltip": "Retry"
-            },
-            {
-                "text": "🔀",  # shuffle
-                "command": self.switch_view,
-                "tooltip": "Switch View"
-            },
         ]
 
         # Create menu bar frame
         menu_bar = tk.Frame(root)
-        menu_bar.grid(row=0, column=0, columnspan=6, sticky="ew")
+        menu_bar.grid(row=0, column=0, columnspan=2, sticky="ew")
         menu_bar.grid_columnconfigure(1, weight=1)
 
-        # Left side navigation buttons
-        nav_frame = tk.Frame(menu_bar)
-        nav_frame.grid(row=0, column=0, sticky="w")
-
-        prev_button = tk.Button(
-            nav_frame,
-            text="⬅️",
-            command=self.go_to_previous,
-            font=('TkDefaultFont', 12)
-        )
-        self.create_tooltip(prev_button, "Previous Entry")
-        prev_button.pack(side=tk.LEFT, padx=2)
-
-        next_button = tk.Button(
-            nav_frame,
-            text="➡️",
-            command=self.go_to_next,
-            font=('TkDefaultFont', 12)
-        )
-        self.create_tooltip(next_button, "Next Entry")
-        next_button.pack(side=tk.LEFT, padx=2)
-
-        # Middle buttons
+        # Left buttons
         buttons_frame = tk.Frame(menu_bar)
-        buttons_frame.grid(row=0, column=1, sticky="ew")
+        buttons_frame.grid(row=0, column=0, sticky="ew")
 
         for btn_config in buttons_config:
             btn = tk.Button(
@@ -219,10 +180,10 @@ class JpVocabUI:
 
         # Right side controls frame
         right_controls = tk.Frame(menu_bar)
-        right_controls.grid(row=0, column=2, sticky="e")
+        right_controls.grid(row=0, column=1, sticky="e")
 
         # AI Service selector
-        translate_label = tk.Label(right_controls, text="Mode:")
+        translate_label = tk.Label(right_controls, text="Auto-action:")
         translate_label.pack(side=tk.LEFT, padx=2)
         translate_dropdown = tk.OptionMenu(
             right_controls,
@@ -236,7 +197,7 @@ class JpVocabUI:
         translate_dropdown.pack(side=tk.LEFT, padx=2)
 
         # AI Service selector
-        ai_label = tk.Label(right_controls, text="LLM:")
+        ai_label = tk.Label(right_controls, text="Service:")
         ai_label.pack(side=tk.LEFT, padx=2)
         ai_dropdown = tk.OptionMenu(
             right_controls,
@@ -256,8 +217,52 @@ class JpVocabUI:
         self.create_tooltip(history_button, "Translation History")
         history_button.pack(side=tk.LEFT, padx=2)
 
+        # Button definitions with emojis and tooltips
+        row2_buttons_config = [
+            {
+                "text": "Translate",
+                "command": self.trigger_basic_translation,
+                "tooltip": "Get Translation"
+            },
+            {
+                "text": "Analyze",
+                "command": self.trigger_cot_translation,
+                "tooltip": "Get Chain-Of-Thought Translation"
+            },
+            {
+                "text": "📚",
+                "command": self.get_definitions,
+                "tooltip": "Get Definitions"
+            },
+            {
+                "text": "❓",
+                "command": self.ask_question,
+                "tooltip": "Ask Question"
+            },
+            {
+                "text": "🔀",  # shuffle
+                "command": self.switch_view,
+                "tooltip": "Toggle Questions View"
+            },
+        ]
+
+        # Create menu bar frame
+        second_menu_bar = tk.Frame(root)
+        second_menu_bar.grid(row=1, column=0, columnspan=6, sticky="ew")
+        second_menu_bar.grid_columnconfigure(1, weight=1)
+
+        for btn_config in row2_buttons_config:
+            btn = tk.Button(
+                second_menu_bar,
+                text=btn_config["text"],
+                command=btn_config["command"],
+                font=('TkDefaultFont', 12)
+            )
+            self.create_tooltip(btn, btn_config["tooltip"])
+            btn.pack(side=tk.LEFT, padx=2)
+
         self.text_output_scrolledtext = ScrolledText(root, wrap="word")
-        self.text_output_scrolledtext.grid(row=1, column=0, columnspan=6, sticky="nsew")
+        self.text_output_scrolledtext.grid(row=2, column=0, columnspan=6, sticky="nsew")
 
         # Run the Tkinter event loop
         root.after(200, lambda: self.update_status(root))
@@ -323,14 +328,8 @@ class JpVocabUI:
         with self.sentence_lock:
             self.locked_sentence = self.ui_sentence
 
-    def toggle_monitor(self):
-        self.ui_monitor_is_enabled = not self.ui_monitor_is_enabled
-
     def trigger_translation(self):
-        request_interrupt_atomic_swap(True)
-        self.ui_translation = ""
-        self.ui_translation_validation = ""
-        self.show_qanda = False
+        self._prep_translation()
 
         if self.translation_style.get() == TranslationType.Off:
             return
@@ -397,6 +396,33 @@ class JpVocabUI:
                 temp=0,
                 api_override=self.ai_service.get(),
                 update_token_key="translation_validation"))
+
+    def trigger_basic_translation(self):
+        self._prep_translation()
+        self.command_queue.put(MonitorCommand(
+            "translate",
+            self.ui_sentence,
+            self.history[:],
+            temp=0,
+            index=1,
+            api_override=self.ai_service.get()))
+
+    def trigger_cot_translation(self):
+        self._prep_translation()
+        self.command_queue.put(MonitorCommand(
+            "translate_cot",
+            self.ui_sentence,
+            self.history[:],
+            temp=0,
+            api_override=self.ai_service.get(),
+            update_token_key="translate"
+        ))
+
+    def _prep_translation(self):
+        request_interrupt_atomic_swap(True)
+        self.ui_translation = ""
+        self.ui_translation_validation = ""
+        self.show_qanda = False
 
     def get_definitions(self):
         request_interrupt_atomic_swap(True)
@@ -594,9 +620,6 @@ class JpVocabUI:
         root.after(50, lambda: self.update_status(root))
 
     def check_clipboard(self):
-        if not self.ui_monitor_is_enabled:
-            return
-
         current_clipboard = pyperclip.paste()
         current_clipboard = undo_repetition(current_clipboard)
         if current_clipboard != self.previous_clipboard:
@@ -684,15 +707,12 @@ class JpVocabUI:
                 self.ui_response += update_command.token
 
     def update_ui(self):
-        if not self.ui_monitor_is_enabled:
-            textfield_value = "Monitoring is disabled!"
+        if self.show_qanda:
+            textfield_value = f"{self.ui_question.strip()}\n{self.ui_response}"
         else:
-            if self.show_qanda:
-                textfield_value = f"{self.ui_question.strip()}\n{self.ui_response}"
-            else:
-                clean_translation = self.ui_translation.strip().replace("\n\n", "\n")
-                textfield_value = (f"{self.ui_sentence.strip()}\n\n{clean_translation}\n\n{self.ui_definitions}"
-                                   f"\n\n{self.ui_translation_validation}")
+            clean_translation = self.ui_translation.strip().replace("\n\n", "\n")
+            textfield_value = (f"{self.ui_sentence.strip()}\n\n{clean_translation}\n\n{self.ui_definitions}"
+                               f"\n\n{self.ui_translation_validation}")
         if self.last_textfield_value is None or self.last_textfield_value != textfield_value:
             self.text_output_scrolledtext.delete("1.0", tk.END)  # Clear current contents.
             self.text_output_scrolledtext.insert(tk.INSERT, textfield_value)
