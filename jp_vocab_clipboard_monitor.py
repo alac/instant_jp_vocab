@@ -372,15 +372,16 @@ Input:
    • Misaki is playfully teasing Shōta about comparing her outfit to Yuka's.
    • Casual, intimate setting.
 2. Grammar:
-   • ふむふむ (fumufumu): Interjection showing thoughtful consideration.
-   • なるほど (naruhodo): Expression of understanding.
-   • つまり (tsumari): Namely, that is to say.
-   • 甲乙つけがたい (kōotsukegaitai): Unable to distinguish between the two; too close to call.
-   • って事ね (tte koto ne): That's what it means, right? (casual)
-   • ま (ma): Well.
-   • 一応 (ichiō): For the time being; tentatively.
-   • その答 (sono kotae): That answer.
-   • 及第点 (kyūditeten): Passing grade; just barely acceptable.
+   • ふむふむ (ふむふむ): Interjection showing thoughtful consideration.
+   • なるほど (なるほど): Expression of understanding.
+   • つまり (つまり): Namely, that is to say.
+   • 甲乙つけがたい (こうおつつけがたい): Unable to distinguish between the two; too close to call.
+   • って事ね (って こと ね): That's what it means, right? (casual)
+   • ま (ま): Well.
+   • 一応 (いちおう): For the time being; tentatively.
+   • その答 (その こた え): That answer.
+   • 及第点 (きゅうだいてん): Passing grade; just barely acceptable.
+
 3. Idioms/Nuances:
    • ふむふむ and なるほど are common interjections used to show understanding or agreement.
    • って事ね adds a casual and playful tone.
