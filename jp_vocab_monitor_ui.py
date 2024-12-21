@@ -109,10 +109,10 @@ class JpVocabUI:
 
         self.ai_service = None  # type: Optional[tk.StringVar]
         self.translation_style = None  # type: Optional[tk.StringVar]
+        self.font_size = None  # type: Optional[tk.StringVar]
 
     def on_ai_service_change(self, *args):
         selected_service = self.ai_service.get()
-        # Stub for handling service change
         print(f"AI service changed to: {selected_service}")
 
     def start_ui(self):
@@ -260,6 +260,20 @@ class JpVocabUI:
             )
             self.create_tooltip(btn, btn_config["tooltip"])
             btn.pack(side=tk.LEFT, padx=2)
+
+        font_label = tk.Label(second_menu_bar, text="Font:", font=('TkDefaultFont', 12))
+        font_label.pack(side=tk.LEFT, padx=2)
+
+        self.font_size = tk.StringVar(value="12")
+        self.font_size.trace_add('write', self.update_font_size)
+        font_spinbox = tk.Spinbox(
+            second_menu_bar,
+            from_=8,
+            to=72,
+            width=3,
+            textvariable=self.font_size,
+        )
+        font_spinbox.pack(side=tk.LEFT, padx=2)
 
         self.text_output_scrolledtext = ScrolledText(root, wrap="word")
         self.text_output_scrolledtext.grid(row=2, column=0, columnspan=6, sticky="nsew")
@@ -540,6 +554,19 @@ class JpVocabUI:
         history_window.transient(self.tk_root)
         history_window.grab_set()
         self.tk_root.wait_window(history_window)
+
+    def update_font_size(self, *args):
+        try:
+            size = int(self.font_size.get())
+            if 8 <= size <= 72:  # Add bounds checking
+                current_font = self.text_output_scrolledtext.cget("font")
+                if isinstance(current_font, str):
+                    family = current_font
+                else:
+                    family = current_font.split()[0]
+                self.text_output_scrolledtext.configure(font=(family, size))
+        except ValueError:
+            pass
 
     # threading etc
 
