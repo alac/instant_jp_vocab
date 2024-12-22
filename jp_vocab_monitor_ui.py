@@ -22,6 +22,8 @@ from library.ai_requests import AI_SERVICE_GEMINI, AI_SERVICE_OOBABOOGA
 
 CLIPBOARD_CHECK_LATENCY_MS = 250
 
+font_size_changed_signal = None
+
 
 class TranslationType(str, Enum):
     Off = 'Off'
@@ -555,10 +557,15 @@ class JpVocabUI:
         history_window.grab_set()
         self.tk_root.wait_window(history_window)
 
-    def update_font_size(self, *args):
+    def apply_font_size(self):
+        global font_size_changed_signal
+        if not font_size_changed_signal:
+            return
+        font_size_changed_signal = None
+
         try:
             size = int(self.font_size.get())
-            if 8 <= size <= 72:  # Add bounds checking
+            if 8 <= size <= 72:
                 current_font = self.text_output_scrolledtext.cget("font")
                 if isinstance(current_font, str):
                     family = current_font
@@ -567,6 +574,12 @@ class JpVocabUI:
                 self.text_output_scrolledtext.configure(font=(family, size))
         except ValueError:
             pass
+
+    def update_font_size(self, *args):
+        global font_size_changed_signal
+        if font_size_changed_signal:
+            self.tk_root.after_cancel(font_size_changed_signal)
+        font_size_changed_signal = self.tk_root.after(200, self.apply_font_size)  # Apply after 200ms delay
 
     # threading etc
 
