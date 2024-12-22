@@ -4,7 +4,6 @@ from threading import Lock
 
 from library.ai_requests import run_ai_request_stream
 from library.get_dictionary_defs import get_definitions_for_sentence
-from library.token_count import get_token_count
 from library.settings_manager import settings
 
 

@@ -13,9 +13,9 @@ import threading
 import time
 import tkinter as tk
 
-from jp_vocab_clipboard_monitor import (should_generate_vocabulary_list, UIUpdateCommand, run_vocabulary_list,
-                                        translate_with_context, translate_with_context_cot,
-                                        request_interrupt_atomic_swap, ANSIColors, ask_question)
+from ai_prompts import (should_generate_vocabulary_list, UIUpdateCommand, run_vocabulary_list,
+                        translate_with_context, translate_with_context_cot,
+                        request_interrupt_atomic_swap, ANSIColors, ask_question)
 from library.settings_manager import settings
 from library.ai_requests import AI_SERVICE_GEMINI, AI_SERVICE_OOBABOOGA
 
