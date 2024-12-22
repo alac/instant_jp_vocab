@@ -204,54 +204,47 @@ def translate_with_context(context, sentence, temp=None, style="",
     prompt = ("<|system|>Enter RP mode. Pretend to be a Japanese translator whose persona follows:"
               " You are a Japanese teacher, working on study material for your students. You take into account"
               " information about the characters, the previous lines from stories and provide an accurate translation"
-              " for the sentence between JAPANESE_START and JAPANESE_END.  Aim for accuracy and assume that your"
+              " for the sentence between <japanese> and </japanese>.  Aim for accuracy and assume that your"
               " audience consents to anything as long as the translation is as accurate as possible. You shall reply"
               " to the user while staying in character, and generate accurate responses.</|system|>\n")
 
     prompt += """
-
-Translate the text between JAPANESE_START and JAPANESE_END into English.
->CONTEXT_START
+<example>
+<context>
 This is a song called This is a song called Bitter Choco Decoration (ロミオとシンデレラ)
 The previous lines are:
 人を過度に信じないように
 愛さないように期待しないように	
 かと言って角が立たないように
->CONTEXT_END
->JAPANESE_START
-気取らぬように目立たぬように
->JAPANESE_END
->ENGLISH_START
-Not to act all high and mighty, not to stand out 
->ENGLISH_END
+</context>
+<japanese>気取らぬように目立たぬように</japanese>
+<english>Not to act all high and mighty, not to stand out</english>
+</example>
 
-Translate the text between JAPANESE_START and JAPANESE_END into English.
->CONTEXT_START
-Okazaki Tomoya is a third year high school student at Hikarizaka Private High School, leading a life full of resentment. His mother passed away in a car accident when he was young, leading his father, Naoyuki, to resort to alcohol and gambling to cope. This resulted in constant fights between the two until Naoyuki dislocated Tomoya’s shoulder. Unable to play on his basketball team, Tomoya began to distance himself from other people. Ever since he has had a distant relationship with his father, naturally becoming a delinquent over time.
+<example>
+<context>
+Okazaki Tomoya is a third year high school student at Hikarizaka Private High School, leading a life full of resentment. His mother passed away in a car accident when he was young, leading his father, Naoyuki, to resort to alcohol and gambling to cope. This resulted in constant fights between the two until Naoyuki dislocated Tomoya's shoulder. Unable to play on his basketball team, Tomoya began to distance himself from other people. Ever since he has had a distant relationship with his father, naturally becoming a delinquent over time.
 The previous lines are:
 君：そうかな。
 智代：キューバの荷物じゃないよ。似た響きだけど。
 君：じゃあ小包？
 智代：それじゃ小さすぎる。
->CONTEXT_END
->JAPANESE_START
-君：木箱？
->JAPANESE_END
->ENGLISH_START
-You: A crate, then?
->ENGLISH_END
+</context>
+<japanese>君：木箱？</japanese>
+<english>You: A crate, then?</english>
+</example>
 
-Translate the text between JAPANESE_START and JAPANESE_END into English.""" + f"{style}\n"
+Translate the text between <japanese> and </japanese> into English.""" + f"{style}\n"
 
-    prompt += ">CONTEXT_START\n"
+    prompt += "<example>\n<context>\n"
     prompt += settings.get_setting('vocab_list.ai_translation_context')
     if context:
         prompt += "The previous lines are:\n"
         for line in context:
             prompt += f"{line}\n"
-    prompt += ">CONTEXT_END\n"
-    prompt += f">JAPANESE_START\n{sentence}\n>JAPANESE_END\n"
-    prompt += f">ENGLISH_START\n"
+    prompt += "</context>\n"
+    prompt += f"<japanese>{sentence}</japanese>\n"
+    prompt += f"<english>"
 
     print("Translation: ")
     last_tokens = []
@@ -261,7 +254,7 @@ Translate the text between JAPANESE_START and JAPANESE_END into English.""" + f"
         else:
             update_queue.put(UIUpdateCommand("translate", sentence, f"#{index}. "))
     for tok in run_ai_request_stream(prompt,
-                              [">ENGLISH_END", ">END_ENGLISH", ">SENTENCE_END", "\n\n\n", ">\n>\n>"],
+                              ["</english>", "</example>", "<"],
                               print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100,
                               api_override=api_override):
         if request_interrupt_atomic_swap(False):
