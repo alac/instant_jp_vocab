@@ -457,21 +457,7 @@ class JpVocabUI:
                                               temp=0, api_override=self.ai_service.get()))
 
     def play_tts(self):
-        speech_config = speechsdk.SpeechConfig(subscription=settings.get_setting('azure_tts.speech_key'),
-                                               region=settings.get_setting('azure_tts.speech_region'))
-        audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
-        speech_config.speech_synthesis_voice_name = settings.get_setting('azure_tts.speech_voice')
-
-        speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
-        speech_synthesis_result = speech_synthesizer.speak_text_async(self.ui_sentence).get()
-
-        if speech_synthesis_result.reason == speechsdk.ResultReason.Canceled:
-            cancellation_details = speech_synthesis_result.cancellation_details
-            print("Speech synthesis canceled: {}".format(cancellation_details.reason))
-            if cancellation_details.reason == speechsdk.CancellationReason.Error:
-                if cancellation_details.error_details:
-                    print("Error details: {}".format(cancellation_details.error_details))
-                    print("Did you set the azure_tts speech resource key and region values?")
+        self.command_queue.put(MonitorCommand("tts", self.ui_sentence, self.history[:]))
 
     def retry(self):
         with self.sentence_lock:
@@ -632,6 +618,8 @@ class JpVocabUI:
                 if command.command_type == "qanda":
                     ask_question(command.prompt, command.sentence, command.history, temp=command.temp,
                                  update_queue=self.ui_update_queue, api_override=command.api_override)
+                if command.command_type == "tts":
+                    generate_tts(command.sentence)
             except Empty:
                 pass
             except Exception as e:
@@ -781,6 +769,24 @@ def undo_repetition(input_string):
     result = re.sub(pattern, process_group, input_string)
 
     return result
+
+
+def generate_tts(sentence):
+    speech_config = speechsdk.SpeechConfig(subscription=settings.get_setting('azure_tts.speech_key'),
+                                           region=settings.get_setting('azure_tts.speech_region'))
+    audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
+    speech_config.speech_synthesis_voice_name = settings.get_setting('azure_tts.speech_voice')
+
+    speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
+    speech_synthesis_result = speech_synthesizer.speak_text_async(sentence).get()
+
+    if speech_synthesis_result.reason == speechsdk.ResultReason.Canceled:
+        cancellation_details = speech_synthesis_result.cancellation_details
+        print("Speech synthesis canceled: {}".format(cancellation_details.reason))
+        if cancellation_details.reason == speechsdk.CancellationReason.Error:
+            if cancellation_details.error_details:
+                print("Error details: {}".format(cancellation_details.error_details))
+                print("Did you set the azure_tts speech resource key and region values?")
 
 
 if __name__ == '__main__':
