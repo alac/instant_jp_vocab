@@ -146,15 +146,13 @@ Idioms:
 Define the words in the sentence below
 Sentence: """ + sentence.strip() + """
 Vocabulary: """
-    print("prompt length:", get_token_count(prompt))
-    print("Sentence: """ + sentence.strip())
     last_tokens = []
     for tok in run_ai_request_stream(prompt, ["Sentence:", "\n\n", "</task>"], print_prompt=False,
                                      temperature=temp, ban_eos_token=False, max_response=500,
                                      api_override=api_override):
         if request_interrupt_atomic_swap(False):
             print(ANSIColors.GREEN, end="")
-            print("---\n")
+            print("-interrupted-\n")
             print(ANSIColors.END, end="")
             break
         if update_queue is not None:
@@ -259,11 +257,12 @@ Translate the text between <japanese> and </japanese> into English.""" + f"{styl
                               api_override=api_override):
         if request_interrupt_atomic_swap(False):
             print(ANSIColors.GREEN, end="")
-            print("---\n")
+            print("-interrupted-\n")
             print(ANSIColors.END, end="")
             break
         if update_queue is not None:
             update_queue.put(UIUpdateCommand("translate", sentence, tok))
+        # explicit exit for models getting stuck on a token (e.g. "............")
         last_tokens.append(tok)
         last_tokens = last_tokens[-10:]
         if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
@@ -397,7 +396,6 @@ Misaki: "Hmm, I see. So you can't decide which one is better, huh? Well, I guess
 
     prompt += f"Input:\n{sentence}\n\nAnalysis:"
 
-    print("Chain Of Thought: ")
     last_tokens = []
     for tok in run_ai_request_stream(prompt,
                                      ["</task>"],
@@ -405,11 +403,12 @@ Misaki: "Hmm, I see. So you can't decide which one is better, huh? Well, I guess
                                      api_override=api_override):
         if request_interrupt_atomic_swap(False):
             print(ANSIColors.GREEN, end="")
-            print("---\n")
+            print("-interrupted-\n")
             print(ANSIColors.END, end="")
             break
         if update_queue is not None:
             update_queue.put(UIUpdateCommand(update_token_key, sentence, tok))
+        # explicit exit for models getting stuck on a token (e.g. "............")
         last_tokens.append(tok)
         last_tokens = last_tokens[-10:]
         if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
@@ -480,18 +479,18 @@ Answer the question. If the question is about a specific word or phrase, break i
 """ + previous_lines.strip() + "\nThe question starts:\n" + question.strip() + """
 >QUESTION_END
 >ANSWER_START"""
-    print("prompt length:", get_token_count(prompt))
     last_tokens = []
     for tok in run_ai_request_stream(prompt, ["ANSWER_END", "END_ANSWER"], print_prompt=False,
                                      temperature=temp, ban_eos_token=False, max_response=1000,
                                      api_override=api_override):
         if request_interrupt_atomic_swap(False):
             print(ANSIColors.GREEN, end="")
-            print("---\n")
+            print("-interrupted-\n")
             print(ANSIColors.END, end="")
             break
         if update_queue is not None:
             update_queue.put(UIUpdateCommand(update_token_key, sentence, tok))
+        # explicit exit for models getting stuck on a token (e.g. "............")
         last_tokens.append(tok)
         last_tokens = last_tokens[-10:]
         if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
