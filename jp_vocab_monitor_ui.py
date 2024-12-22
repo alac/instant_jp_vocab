@@ -21,8 +21,7 @@ from library.ai_requests import AI_SERVICE_GEMINI, AI_SERVICE_OOBABOOGA
 
 
 CLIPBOARD_CHECK_LATENCY_MS = 250
-
-font_size_changed_signal = None
+FONT_SIZE_DEBOUNCE_DURATION = 200
 
 
 class TranslationType(str, Enum):
@@ -86,9 +85,16 @@ class JpVocabUI:
         self.ui_definitions = ""
         self.ui_question = ""
         self.ui_response = ""
+
         # transient ui state
         self.last_textfield_value = ""
         self.show_qanda = False
+
+        # state for tkinter
+        self.ai_service = None  # type: Optional[tk.StringVar]
+        self.translation_style = None  # type: Optional[tk.StringVar]
+        self.font_size = None  # type: Optional[tk.StringVar]
+        self.font_size_changed_signal = None
 
         # monitor data
         self.history = []
@@ -99,19 +105,14 @@ class JpVocabUI:
         self.locked_sentence = ""
         self.sentence_lock = threading.Lock()
 
-        # initialize
+        # history
         cache_file = os.path.join("translation_history", f"{self.source}.json")
         if os.path.isfile(cache_file):
             with open(cache_file, 'r', encoding='utf-8') as f:
                 self.history = json.load(f)
         self.history_length = settings.get_setting('vocab_list.ai_translation_history_length')
-
         self.history_states = []  # type: list[HistoryState]
         self.history_states_index = -1
-
-        self.ai_service = None  # type: Optional[tk.StringVar]
-        self.translation_style = None  # type: Optional[tk.StringVar]
-        self.font_size = None  # type: Optional[tk.StringVar]
 
     def on_ai_service_change(self, *args):
         selected_service = self.ai_service.get()
@@ -558,10 +559,9 @@ class JpVocabUI:
         self.tk_root.wait_window(history_window)
 
     def apply_font_size(self):
-        global font_size_changed_signal
-        if not font_size_changed_signal:
+        if not self.font_size_changed_signal:
             return
-        font_size_changed_signal = None
+        self.font_size_changed_signal = None
 
         try:
             size = int(self.font_size.get())
@@ -576,10 +576,9 @@ class JpVocabUI:
             pass
 
     def update_font_size(self, *args):
-        global font_size_changed_signal
-        if font_size_changed_signal:
-            self.tk_root.after_cancel(font_size_changed_signal)
-        font_size_changed_signal = self.tk_root.after(200, self.apply_font_size)  # Apply after 200ms delay
+        if self.font_size_changed_signal:
+            self.tk_root.after_cancel(self.font_size_changed_signal)
+        self.font_size_changed_signal = self.tk_root.after(FONT_SIZE_DEBOUNCE_DURATION, self.apply_font_size)
 
     # threading etc
 
