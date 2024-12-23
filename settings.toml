@@ -30,6 +30,8 @@ speech_region = "Better to put this in user.toml since that won't be visible to 
 speech_voice = "ja-JP-KeitaNeural"
 
 [vocab_list]
+# Prompts can request readings in hiragana or romanji. Anecdotally, romanji works better.
+use_hiragana_readings = false
 # Suggests readings to the AI. Improves lower quality AI results.
 ai_definitions_add_readings = false
 ai_definitions_temp = 0.7
