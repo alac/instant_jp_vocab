@@ -636,13 +636,12 @@ def ask_question(question: str, sentence: str, history: list[str], temp: float,
 
     prompt = """<|system|>Enter RP mode. Pretend to be an expert Japanese teacher whose persona follows: As a expert Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and understanding idioms. Your student will precede their question with context. Aim for accuracy and assume that your audience consents to anything as long as you answer the question at the end. Reply to the user while staying in character, and give correct translations.</|system|>
 
-
-Answer the question. If the question is about a specific word or phrase, break it down into sub-words. If it is a grammar question, explain why it works that way and what the concept is called.
->QUESTION_START
+<example>
+<question>
 ちとせ「ふふっ、掃除しがいもあるけどね」
 What does "しがい" above mean? How does it work in the sentence? What's the dictionary form of the word?
->QUESTION_END
->ANSWER_START
+</question>
+<answer>
 "しがい" is the nominal form of the verb "する" (suru), which means "to do". It is used to indicate that something is worth doing or has value. In this sentence, "ちとせ" (Chitose) is saying that the mess she is cleaning up is worth cleaning, even though it is a lot of work. The dictionary form of the word is "する" (suru).
 
 Here is a more detailed breakdown of the sentence:
@@ -653,11 +652,11 @@ Here is a more detailed breakdown of the sentence:
 * "しがい" (shigai): This is the nominal form of the verb "する" (suru), which means "to do". It indicates that something is worth doing or has value.
 * "ある" (aru): This is the verb "to be" in the present tense.
 * "けどね" (kedo ne): This is a Japanese conjunction that is used to add emphasis to a statement. It can be translated as "though" or "but".
->ANSWER_END
+</answer>
+</example>
 
-
-Answer the question. If the question is about a specific word or phrase, break it down into sub-words. If it is a grammar question, explain why it works that way and what the concept is called.
->QUESTION_START
+<example>
+<question>
 玲「……私、歯の浮くセリフというのを、生まれて初めて聞きました」
 Vocabulary:
     私 - わたくし - I
@@ -668,21 +667,20 @@ Vocabulary:
     初めて - はじめて - for the first time
     聞きました - ききました - heard
 is there an idiom in the above sentence? If so, what does it mean?
->QUESTION_END
->ANSWER_START
+</question>
+<answer>
 歯の浮くセリフ
 Meaning: cheesy line, corny line, cringeworthy line
 The idiom "歯の浮くセリフ" literally means "a line that makes your teeth float." It is used to describe a line that is so cheesy, corny, or cringeworthy that it makes your teeth hurt. The idiom is often used in a humorous way to make fun of someone who has said something particularly cheesy or corny.
->ANSWER_END
+</answer>
+</example>
 
-
-Answer the question. If the question is about a specific word or phrase, break it down into sub-words. If it is a grammar question, explain why it works that way and what the concept is called.
->QUESTION_START
+<question>
 """ + previous_lines.strip() + "\nThe question starts:\n" + question.strip() + """
->QUESTION_END
->ANSWER_START"""
+</question>
+<answer>"""
     last_tokens = []
-    for tok in run_ai_request_stream(prompt, ["ANSWER_END", "END_ANSWER"], print_prompt=False,
+    for tok in run_ai_request_stream(prompt, ["</answer>", "</example>"], print_prompt=False,
                                      temperature=temp, ban_eos_token=False, max_response=1000,
                                      api_override=api_override):
         if request_interrupt_atomic_swap(False):
