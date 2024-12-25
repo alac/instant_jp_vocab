@@ -737,7 +737,7 @@ class JpVocabUI:
         if self.show_qanda:
             textfield_value = f"{self.ui_question.strip()}\n{self.ui_response}"
         else:
-            clean_translation = self.ui_translation.strip().replace("\n\n", "\n")
+            clean_translation = self.ui_translation.strip()
             textfield_value = (f"{self.ui_sentence.strip()}\n\n{clean_translation}\n\n{self.ui_definitions}"
                                f"\n\n{self.ui_translation_validation}")
         if self.last_textfield_value is None or self.last_textfield_value != textfield_value:
