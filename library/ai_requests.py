@@ -122,25 +122,30 @@ def run_ai_request_ooba(prompt: str, custom_stopping_strings: Optional[list[str]
 
 def run_ai_request_gemini_pro(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
                               max_response: int = 2048):
-    prompt = ("Respond directly with only the requested information. "
-              "Do not add any conversational elements, greetings, or explanations. "
-              "Use examples provided as a guide and follow the pattern to complete the task. " + prompt)
+    system_prompt = """Respond directly with only the requested information.
+Do not add any conversational elements, greetings, or explanations.
+Use examples provided as a guide and follow the pattern to complete the task."""
+
     google_genai.configure(api_key=settings.get_setting('gemini_pro_api.api_key'))
     model = google_genai.GenerativeModel(settings.get_setting('gemini_pro_api.api_model'),
-                                         # Lower safety settings since we're processing public YouTube content
                                          safety_settings={
                                               "harassment": "block_none",
                                               "hate_speech": "block_none",
                                               "sexually_explicit": "block_none",
                                               "dangerous": "block_none",
                                          },
-                                         # Add generation config
                                          generation_config={
                                               "temperature": temperature,
                                               "stop_sequences": custom_stopping_strings,
                                               "max_output_tokens": max_response,
                                          })
-    response = model.generate_content(prompt, stream=True)
+
+    contents = [
+        {"role": "user", "parts": [system_prompt]},
+        {"role": "user", "parts": [prompt]},
+    ]
+
+    response = model.generate_content(contents, stream=True)
 
     with open(os.path.join(ROOT_FOLDER, "response.txt"), "w", encoding='utf-8') as f:
         for chunk in response:
