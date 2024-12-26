@@ -122,10 +122,6 @@ def run_ai_request_ooba(prompt: str, custom_stopping_strings: Optional[list[str]
 
 def run_ai_request_gemini_pro(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
                               max_response: int = 2048):
-    system_prompt = """Respond directly with only the requested information.
-Do not add any conversational elements, greetings, or explanations.
-Use examples provided as a guide and follow the pattern to complete the task."""
-
     google_genai.configure(api_key=settings.get_setting('gemini_pro_api.api_key'))
     model = google_genai.GenerativeModel(settings.get_setting('gemini_pro_api.api_model'),
                                          safety_settings={
@@ -140,6 +136,7 @@ Use examples provided as a guide and follow the pattern to complete the task."""
                                               "max_output_tokens": max_response,
                                          })
 
+    system_prompt = settings.get_setting('gemini_pro_api.system_prompt')
     contents = [
         {"role": "user", "parts": [system_prompt]},
         {"role": "user", "parts": [prompt]},

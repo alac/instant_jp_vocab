@@ -12,6 +12,9 @@ preset_name = 'none'
 api_key = "Better to put this in user.toml since that won't be visible to git."
 # pick one of the values from https://ai.google.dev/gemini-api/docs/models/gemini
 api_model = "gemini-1.5-flash"
+system_prompt = """Respond directly with only the requested information.
+Do not add any conversational elements, greetings, or explanations.
+Use examples provided as a guide and follow the pattern to complete the task."""
 
 [azure_tts]
 # Azure has a generous speech synthesis free plan
