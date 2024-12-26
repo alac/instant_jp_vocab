@@ -3,6 +3,7 @@ response.txt
 translation_history/*
 settings/*
 notes/*
+outputs/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

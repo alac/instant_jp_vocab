@@ -4,6 +4,8 @@ from string import Template
 from typing import Optional
 from threading import Lock
 import os
+import datetime
+import time
 
 from library.ai_requests import run_ai_request_stream
 from library.get_dictionary_defs import get_definitions_for_sentence
@@ -308,6 +310,8 @@ def translate_with_context_cot(context, sentence, temp=None,
         print(f"Error loading prompt template: {e}")
         return None
 
+    result = ""
+
     last_tokens = []
     for tok in run_ai_request_stream(prompt,
                                      ["</task>"],
@@ -320,11 +324,22 @@ def translate_with_context_cot(context, sentence, temp=None,
             break
         if update_queue is not None:
             update_queue.put(UIUpdateCommand(update_token_key, sentence, tok))
+        result += tok
         # explicit exit for models getting stuck on a token (e.g. "............")
         last_tokens.append(tok)
         last_tokens = last_tokens[-10:]
         if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
             break
+
+    if len(sentence) > 30 and settings.get_setting_fallback('vocab_list.save_cot_outputs', fallback=False):
+        human_readable = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        milliseconds = int(time.time() * 1000)
+        filename = f"{human_readable}_{milliseconds}_{api_override}.txt"
+
+        input_and_output = prompt.replace(examples, "") + "\n" + result
+        os.makedirs(os.path.join("outputs", f"{human_readable}"), exist_ok=True)
+        with open(os.path.join("outputs", f"{human_readable}", filename), "w", encoding='utf-8') as f:
+            f.write(input_and_output)
 
 
 def ask_question(question: str, sentence: str, history: list[str], temp: float,

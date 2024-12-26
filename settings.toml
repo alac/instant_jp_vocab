@@ -36,6 +36,7 @@ speech_voice = "ja-JP-KeitaNeural"
 # Determines format of the "translation with analysis" behavior (also known as COT)
 cot_prompt_filepath = "prompts/cot_translation.txt"
 cot_examples_filepath = "prompts/examples/cot_translation_original.txt"
+save_cot_outputs = false
 # Suggests readings to the AI. Improves lower quality AI results.
 ai_definitions_add_readings = false
 ai_definitions_temp = 0.7
