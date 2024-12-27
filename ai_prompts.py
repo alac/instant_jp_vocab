@@ -332,13 +332,14 @@ def translate_with_context_cot(context, sentence, temp=None,
             break
 
     if len(sentence) > 30 and settings.get_setting_fallback('vocab_list.save_cot_outputs', fallback=False):
-        human_readable = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        milliseconds = int(time.time() * 1000)
-        filename = f"{human_readable}_{milliseconds}_{api_override}.txt"
-
         input_and_output = prompt.replace(examples, "") + "\n" + result
-        os.makedirs(os.path.join("outputs", f"{human_readable}"), exist_ok=True)
-        with open(os.path.join("outputs", f"{human_readable}", filename), "w", encoding='utf-8') as f:
+
+        human_readable = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        filename = f"{human_readable}_{int(time.time() * 1000)}_{api_override}.txt"
+
+        folder_name = os.path.join("outputs", datetime.datetime.now().strftime("%Y-%m-%d"))
+        os.makedirs(folder_name, exist_ok=True)
+        with open(os.path.join(folder_name, filename), "w", encoding='utf-8') as f:
             f.write(input_and_output)
 
 
