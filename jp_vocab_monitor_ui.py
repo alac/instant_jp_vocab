@@ -21,6 +21,7 @@ from library.ai_requests import AI_SERVICE_GEMINI, AI_SERVICE_OOBABOOGA
 
 
 CLIPBOARD_CHECK_LATENCY_MS = 250
+UPDATE_LOOP_LATENCY_MS = 50
 FONT_SIZE_DEBOUNCE_DURATION = 200
 
 
@@ -624,6 +625,8 @@ class JpVocabUI:
                 if command.command_type == "translate_cot":
                     suggested_readings = None
                     if command.include_readings:
+                        if not self.ui_update_queue.empty():
+                            time.sleep(3 * UPDATE_LOOP_LATENCY_MS / 1000.0)
                         suggested_readings = self.ui_definitions
                         self.ui_definitions = ""
                     translate_with_context_cot(command.history,
@@ -667,7 +670,7 @@ class JpVocabUI:
             pass
 
         self.update_ui()
-        root.after(50, lambda: self.update_status(root))
+        root.after(UPDATE_LOOP_LATENCY_MS, lambda: self.update_status(root))
 
     def check_clipboard(self):
         current_clipboard = pyperclip.paste()
