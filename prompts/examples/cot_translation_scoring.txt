@@ -1,0 +1,110 @@
+<example>
+Context: Song lyrics from Bitter Choco Decoration (ロミオとシンデレラ)
+Previous lines:
+- 人を過度に信じないように (So as not to trust people too much)
+- 愛さないように期待しないように (So as not to love, so as not to expect)
+- かと言って角が立たないように (Yet, so as not to create conflict)
+
+Input:
+気取らぬように目立たぬように
+
+Analysis:
+1. Context:
+• Part of series of self-imposed restrictions
+• Poetic/lyrical register
+
+2. Vocabulary and Readings:
+気取る - to put on airs, to act affected
+→ kidoru (9/10)
+目立つ - to stand out, to be conspicuous
+→ medatsu (10/10)
+ぬ - archaic negative suffix
+→ nu (10/10 archaic)
+ように - so as to, in order to
+→ youni (10/10)
+
+3. Idioms/Nuances:
+• 気取る often has negative connotations of pretentiousness
+• 目立つ can be positive or negative depending on context
+• ぬ adds poetic/archaic feel vs standard ない
+
+4. Translation:
+Not to act all high and mighty, not to stand out
+</example>
+
+<example>
+Context: Okazaki Tomoya, a high school student with a troubled past, is having a conversation.
+Previous lines:
+- 君：そうかな。(You: Is that so?)
+- 智代：キューバの荷物じゃないよ。似た響きだけど。(Tomoyo: It's not "Cuba baggage". Similar sound though.)
+- 君：じゃあ小包？(You: A package then?)
+- 智代：それじゃ小さすぎる。(Tomoyo: That's too small.)
+
+Input:
+君：木箱？
+
+Analysis:
+1. Context:
+• Part of guessing game conversation
+• Progressive size increase in guesses
+• Casual student dialogue
+
+2. Vocabulary and Readings:
+君 - you (casual)
+→ kimi (10/10), kun (3/10 name suffix)
+木箱 - wooden box, crate
+→ kibako (9/10), mokubako (2/10 formal)
+
+3. Idioms/Nuances:
+• Simple guessing question
+• Casual form matches student-to-student dialogue
+• Gender note: Speaker's gender is known from context
+
+4. Translation:
+You: A crate, then?
+</example>
+
+<example>
+Context: Shōta's mother died long ago. Yuka and Misaki are 'competing' to adopt him.
+Previous lines:
+美咲「どう、似合ってる？」
+翔太「へぇ、由香さんが着てたのとデザインは同じなのに着る人で随分印象変わるな」
+美咲「すぐに由香さんと比較してぇ……で、しょう君的にはどっちが似合ってるの？」
+翔太「え、ええっ！？　ええっと……」
+正直、両方似合っているので甲乙つけがたいんだけど……。
+しかし、美咲さんはそれが不満なようでムッとした顔を僕の顔に近付ける。
+美咲「もう、しょう君ったら。ここは、『美咲ママに決まってるよ』って即答しないとダメでしょ」
+翔太「そんなこと言われても、困るよ。それぞれの良さがあるし」
+
+Input:
+美咲「ふむふむ、なるほど。つまり甲乙つけがたいって事ね。ま、一応その答は及第点」
+
+Analysis:
+1. Context:
+• Playful conversation about comparing outfits
+• Semi-casual, familiar setting
+
+2. Vocabulary and Readings:
+ふむふむ - hmm, I see (thoughtful)
+→ fumufumu (10/10)
+なるほど - I see, indeed
+→ naruhodo (10/10)
+つまり - in other words
+→ tsumari (10/10)
+甲乙つけがたい - hard to choose between
+→ kouotsu tsukegatai (9/10)
+って事 - meaning that (casual)
+→ tte koto (10/10), tte ji (2/10 compound)
+一応 - for now, somewhat
+→ ichiou (10/10)
+及第点 - passing grade
+→ kyuudaiten (10/10)
+
+3. Idioms/Nuances:
+• ふむふむ and なるほど are common interjections showing understanding
+• って事ね adds a casual and playful tone
+• 及第点 implies acceptable but not outstanding answer
+
+4. Translation:
+Misaki: "Hmm, I see. So you can't decide which one is better, huh? Well, I guess that answer will do for now."
+</example>
