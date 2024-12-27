@@ -275,10 +275,11 @@ Translate the text between <japanese> and </japanese> into English.""" + f"{styl
             break
 
 
-def translate_with_context_cot(context, sentence, temp=None,
+def translate_with_context_cot(history, sentence, temp=None,
                                update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None,
                                api_override: Optional[str] = None, use_examples: bool = True,
-                               update_token_key: Optional[str] = 'translate'):
+                               update_token_key: Optional[str] = 'translate',
+                               suggested_readings: Optional[str] = None):
     if temp is None:
         temp = settings.get_setting('vocab_list.ai_translation_temp')
 
@@ -293,15 +294,19 @@ def translate_with_context_cot(context, sentence, temp=None,
         with open(file_to_load, 'r', encoding='utf-8') as f:
             return f.read()
 
+    readings_string = None
     try:
         template = read_file_or_throw(prompt_file)
         examples = read_file_or_throw(examples_file) if use_examples else ""
         previous_lines = ""
-        if context:
-            previous_lines = "Previous lines:\n" + "\n".join(f"- {line}" for line in context)
+        if history:
+            previous_lines = "Previous lines:\n" + "\n".join(f"- {line}" for line in history)
+        context = settings.get_setting('vocab_list.ai_translation_context')
+        if suggested_readings:
+            readings_string = "\nReadings:" + suggested_readings
         template_data = {
             'examples': examples,
-            'context': settings.get_setting('vocab_list.ai_translation_context'),
+            'context': context + readings_string,
             'previous_lines': previous_lines,
             'sentence': sentence
         }
@@ -332,7 +337,7 @@ def translate_with_context_cot(context, sentence, temp=None,
             break
 
     if len(sentence) > 30 and settings.get_setting_fallback('vocab_list.save_cot_outputs', fallback=False):
-        input_and_output = prompt.replace(examples, "") + "\n" + result
+        input_and_output = prompt.replace(examples, "").replace(readings_string, "") + "\n" + result
 
         human_readable = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         filename = f"{human_readable}_{int(time.time() * 1000)}_{api_override}.txt"

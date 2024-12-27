@@ -30,12 +30,13 @@ class TranslationType(str, Enum):
     BestOfThree = 'Best of Three'
     ChainOfThought = 'With Analysis (CoT)'
     TranslateAndChainOfThought = 'Post-Hoc Analysis'
+    DefineAndChainOfThought = 'Define->Analysis'
 
 
 class MonitorCommand:
     def __init__(self, command_type: str, sentence: str, history: list[str], prompt: str = None,
                  temp: Optional[float] = None, style: str = None, index: int = 0, api_override: Optional[str] = None,
-                 update_token_key: Optional[str] = None):
+                 update_token_key: Optional[str] = None, include_readings: bool = False):
         self.command_type = command_type
         self.sentence = sentence
         self.history = history
@@ -45,6 +46,7 @@ class MonitorCommand:
         self.index = index
         self.api_override = api_override
         self.update_token_key = update_token_key
+        self.include_readings = include_readings
 
 
 class HistoryState:
@@ -195,7 +197,8 @@ class JpVocabUI:
             TranslationType.Translate,
             TranslationType.BestOfThree,
             TranslationType.ChainOfThought,
-            TranslationType.TranslateAndChainOfThought
+            TranslationType.TranslateAndChainOfThought,
+            TranslationType.DefineAndChainOfThought
         )
         translate_dropdown.pack(side=tk.LEFT, padx=2)
 
@@ -413,6 +416,21 @@ class JpVocabUI:
                 temp=0,
                 api_override=self.ai_service.get(),
                 update_token_key="translation_validation"))
+        elif self.translation_style.get() == TranslationType.DefineAndChainOfThought:
+            self.command_queue.put(MonitorCommand(
+                "define",
+                self.ui_sentence,
+                [],
+                temp=0,
+                api_override=self.ai_service.get()))
+            self.command_queue.put(MonitorCommand(
+                "translate_cot",
+                self.ui_sentence,
+                self.history[:],
+                temp=0,
+                api_override=self.ai_service.get(),
+                update_token_key="translation_validation",
+                include_readings=True))
 
     def trigger_basic_translation(self):
         self._prep_translation()
@@ -604,12 +622,17 @@ class JpVocabUI:
                                  update_queue=self.ui_update_queue, update_token_key=command.update_token_key,
                                  api_override=command.api_override)
                 if command.command_type == "translate_cot":
+                    suggested_readings = None
+                    if command.include_readings:
+                        suggested_readings = self.ui_definitions
+                        self.ui_definitions = ""
                     translate_with_context_cot(command.history,
                                                command.sentence,
                                                update_queue=self.ui_update_queue,
                                                temp=command.temp,
                                                update_token_key=command.update_token_key,
-                                               api_override=command.api_override)
+                                               api_override=command.api_override,
+                                               suggested_readings=suggested_readings)
                     self.ui_update_queue.put(UIUpdateCommand(command.update_token_key, command.sentence, "\n"))
                 if command.command_type == "define":
                     add_readings = settings.get_setting('vocab_list.ai_definitions_add_readings')
