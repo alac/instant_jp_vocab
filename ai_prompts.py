@@ -294,7 +294,7 @@ def translate_with_context_cot(history, sentence, temp=None,
         with open(file_to_load, 'r', encoding='utf-8') as f:
             return f.read()
 
-    readings_string = None
+    readings_string = ""
     try:
         template = read_file_or_throw(prompt_file)
         examples = read_file_or_throw(examples_file) if use_examples else ""
@@ -303,7 +303,7 @@ def translate_with_context_cot(history, sentence, temp=None,
             previous_lines = "Previous lines:\n" + "\n".join(f"- {line}" for line in history)
         context = settings.get_setting('vocab_list.ai_translation_context')
         if suggested_readings:
-            readings_string = "\nReadings:" + suggested_readings
+            readings_string = "\nSuggested Readings:" + suggested_readings
         template_data = {
             'examples': examples,
             'context': context + readings_string,
