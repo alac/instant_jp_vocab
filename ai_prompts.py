@@ -8,7 +8,7 @@ import datetime
 import time
 
 from library.ai_requests import run_ai_request_stream
-from library.get_dictionary_defs import get_definitions_for_sentence
+from library.get_dictionary_defs import get_definitions_for_sentence, correct_vocab_readings, parse_vocab_readings
 from library.settings_manager import settings
 
 
@@ -60,7 +60,7 @@ def run_vocabulary_list(sentence: str, temp: float,
         return None
 
     last_tokens = []
-    for tok in run_ai_request_stream(prompt, ["Sentence:", "\n\n", "</task>"], print_prompt=False,
+    for tok in run_ai_request_stream(prompt, ["</task>"], print_prompt=False,
                                      temperature=temp, ban_eos_token=False, max_response=500,
                                      api_override=api_override):
         if request_interrupt_atomic_swap(False):
@@ -203,7 +203,17 @@ def translate_with_context_cot(history, sentence, temp=None,
             previous_lines = "Previous lines:\n" + "\n".join(f"- {line}" for line in history)
         context = settings.get_setting('vocab_list.ai_translation_context')
         if suggested_readings:
-            readings_string = "\nSuggested Readings:" + suggested_readings
+            if settings.get_setting('vocab_list.enable_jmdict_replacements'):
+                vocab = parse_vocab_readings(suggested_readings)
+                vocab = correct_vocab_readings(vocab)
+
+                if vocab:
+                    readings_string = "\nSuggested Readings:"
+                    for v in vocab:
+                        word_readings = ",".join(v.readings)
+                        readings_string += f"\n{v.base_form} [{word_readings}] - {v.meaning}"
+            else:
+                readings_string = "\nSuggested Readings:" + suggested_readings
         template_data = {
             'examples': examples,
             'context': context + readings_string,
@@ -237,7 +247,7 @@ def translate_with_context_cot(history, sentence, temp=None,
             break
 
     if len(sentence) > 30 and settings.get_setting_fallback('vocab_list.save_cot_outputs', fallback=False):
-        input_and_output = prompt.replace(examples, "").replace(readings_string, "") + "\n" + result
+        input_and_output = prompt.replace(examples, "") + "\n" + result
 
         human_readable = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         filename = f"{human_readable}_{int(time.time() * 1000)}_{api_override}.txt"

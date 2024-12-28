@@ -127,7 +127,7 @@ class VocabEntry:
     meaning: str
 
 
-def extract_base_form_from_llm_output(text: str) -> list[VocabEntry]:
+def parse_vocab_readings(text: str) -> list[VocabEntry]:
     """
     extracts '件' from a line like:
     - 件 [base form] (ken): matter, case
@@ -190,19 +190,13 @@ def correct_vocab_readings(entries: list[VocabEntry]) -> list[VocabEntry]:
 
     for entry in entries:
         try:
-            print("entry", entry.base_form)
-            # Look up in JMDict
             result = jam.lookup(entry.base_form)
-            print("result", result)
             if result.entries:
-                # Get all readings from first entry
-                new_readings = [kana for kana in result.entries[0].kana_forms]
-                print("new_readings", new_readings)
+                new_readings = [str(kana) for kana in result.entries[0].kana_forms]
                 if new_readings:
                     entry.readings = new_readings
                 else:
                     print(f"No readings found for: {entry.base_form}")
-                print("entry.readings", entry.readings)
             else:
                 print(f"No JMDict entry found for: {entry.base_form}")
         except Exception as e:
@@ -226,7 +220,7 @@ if __name__ == "__main__":
     - させる [base form of causative] (saseru): to make/let someone do
     - 為 [base form] (tame): for the sake of
     """
-    entries = extract_base_form_from_llm_output(text)
+    entries = parse_vocab_readings(text)
     for entry in entries:
         print(f"{entry.base_form} ({entry.readings}): {entry.meaning}")
 
