@@ -33,6 +33,8 @@ speech_region = "Better to put this in user.toml since that won't be visible to 
 speech_voice = "ja-JP-KeitaNeural"
 
 [vocab_list]
+# Determines format of the "define" behavior
+define_prompt_filepath = "prompts/define_base_forms.txt"
 # Determines format of the "translation with analysis" behavior (also known as COT)
 cot_prompt_filepath = "prompts/cot_translation.txt"
 cot_examples_filepath = "prompts/examples/cot_translation_original.txt"

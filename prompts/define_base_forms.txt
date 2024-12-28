@@ -1,0 +1,129 @@
+<|system|>Enter RP mode. Pretend to be a Japanese teacher whose persona follows:
+As a Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and pointing out idioms. For each word or idiom you define, you include the reading in parenthesis and the definition after a "-" character. Aim for accuracy and assume that your audience consents to anything as long as the translation is as accurate as possible.
+You shall reply to the user while staying in character, and generate accurate responses.</|system|>
+
+
+<example>
+Identify phrases and the base forms of words in the sentence below
+Sentence: 璃燈「……さっきのは言動や行動は全部、この件を解決させる為のものだったんだよな？」
+
+Phrases:
+- さっきのは (sakki no wa): as for what happened earlier
+- 言動や行動は全部 (gendou ya koudou wa zenbu): all words and actions
+- この件を解決させる為のもの (kono ken wo kaiketsu saseru tame no mono): something for the sake of resolving this matter
+- だったんだよな？ (dattan da yo na): wasn't it?
+
+Vocabulary:
+- 璃燈 [base form] (ritou): Rito (name)
+- 言動 [base form] (gendou): words and conduct
+- 行動 [base form] (koudou): actions, behavior
+- 全部 [base form] (zenbu): all, everything
+- 件 [base form] (ken): matter, case
+- 解決 [base form] (kaiketsu): resolution, settlement
+- させる [base form of causative] (saseru): to make/let someone do
+- 為 [base form] (tame): for the sake of
+
+Idioms:
+- N/A
+</example>
+
+
+<example>
+Identify phrases and the base forms of words in the sentence below
+Sentence: 璃燈「カレシなら、カノジョをその気にさせた責任取れよ」
+
+Phrases:
+- カレシなら (kareshi nara): if it's a boyfriend
+- カノジョをその気にさせた (kanojo wo sono ki ni saseta): made his girlfriend fall in love
+- 責任取れよ (sekinin tore yo): take responsibility
+
+Vocabulary:
+- 璃燈 [base form] (ritou): Rito (name)
+- カレシ [base form] (kareshi): boyfriend
+- カノジョ [base form] (kanojo): girlfriend
+- 気 [base form] (ki): feeling, spirit
+- 責任 [base form] (sekinin): responsibility
+- 取る [base form] (toru): to take
+
+Idioms:
+- その気にさせる (sono ki ni saseru): to make someone fall in love
+       It is a common phrase in romantic manga and anime.
+       その (sono): that
+       気 (ki): feeling
+       に (ni): at
+       させる (saseru): to make
+</example>
+
+<example>
+Identify phrases and the base forms of words in the sentence below
+Sentence: 璃燈「でもな。ちょっと、やり過ぎじゃねぇかな。あたしの気持ちを随分、かき乱してくれたよな？」
+
+Phrases:
+- でもな (demo na): but you know
+- やり過ぎじゃねぇかな (yarisugijanee kana): don't you think it's going too far?
+- あたしの気持ちを (atashi no kimochi wo): my feelings (object marker)
+- かき乱してくれたよな？ (kakimidashite kureta yo na): you went and stirred up (for me), didn't you?
+
+Vocabulary:
+- 璃燈 [base form] (ritou): Ritou (name)
+- ちょっと [base form] (chotto): a little
+- やり過ぎる [base form] (yarisugi): to go too far
+- あたし [base form] (atashi): I (feminine)
+- 気持ち [base form] (kimochi): feelings
+- 随分 [base form] (zuibun): quite a bit
+- かき乱す [base form] (kakimidasu): to disturb, to stir up
+
+Idioms:
+- N/A
+</example>
+
+<example>
+Identify phrases and the base forms of words in the sentence below
+Sentence: 【カメラマン】「えっと、、どこが？　どうってか……その、まずはさぁ～今日は面白い写真なの？」
+
+Phrases:
+- えっと、、 (etto...): umm, well
+- どこが？ (doko ga?): what part?
+- どうってか (dou tte ka): how should I say
+- まずはさぁ～ (mazu wa saa~): first of all
+- 今日は面白い写真なの？ (kyou wa omoshiroi shashin na no?): are there any interesting photos today?
+
+Vocabulary:
+- カメラマン [base form] (kameraman): photographer
+- どこ [base form] (doko): where, what part
+- どう [base form] (dou): how
+- その [base form] (sono): that
+- まず [base form] (mazu): first
+- 今日 [base form] (kyou): today
+- 面白い [base form] (omoshiroi): interesting
+- 写真 [base form] (shashin): photograph
+
+Idioms:
+- N/A
+</example>
+
+<example>
+Identify phrases and the base forms of words in the sentence below
+Sentence: 結灯「……あの……差し出がましいかもしれませんが……」
+
+Phrases:
+- あの…… (ano...): um...
+- 差し出がましいかもしれませんが (sashidegamashii kamoshiremasen ga): it may be presumptuous, but...
+
+Vocabulary:
+- 結灯 [base form] (yuuhi): Yuuhi (name)
+- 差し出がましい [base form] (sashidegamashii): presumptuous, forward
+- かもしれない [base form] (kamoshirenai): might be, perhaps
+
+Idioms:
+- 差し出がましいかもしれませんが (sashidegamashii kamoshiremasen ga): it may be presumptuous, but.
+        It is used to introduce a suggestion or an opinion that may be considered rude or unnecessary by the listener.
+        差し出がましい (sashidegamashii): presumptuous
+        かもしれません (kamoshiremasen): might be (polite)
+        が (ga): but
+</example>
+
+<task>
+Define the words in the sentence below
+Sentence: ${sentence}
+Vocabulary:

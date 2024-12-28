@@ -638,8 +638,7 @@ class JpVocabUI:
                                                suggested_readings=suggested_readings)
                     self.ui_update_queue.put(UIUpdateCommand(command.update_token_key, command.sentence, "\n"))
                 if command.command_type == "define":
-                    add_readings = settings.get_setting('vocab_list.ai_definitions_add_readings')
-                    run_vocabulary_list(command.sentence, temp=command.temp, use_dictionary=add_readings,
+                    run_vocabulary_list(command.sentence, temp=command.temp,
                                         update_queue=self.ui_update_queue, api_override=command.api_override)
                 if command.command_type == "qanda":
                     ask_question(command.prompt, command.sentence, command.history, temp=command.temp,
