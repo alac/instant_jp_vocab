@@ -1,5 +1,5 @@
 [ai_settings]
-# Oogabooga or Gemini
+# Oogabooga or Gemini or OpenAI
 api = "Oogabooga"
 
 [oobabooga_api]
@@ -7,6 +7,11 @@ request_url = 'http://127.0.0.1:5000/v1/completions'
 context_length = 4096
 # preset_name should be a oobabooga preset; 'none' will use the defaults hardcoded into library/ai_requests.py
 preset_name = 'none'
+
+[openai_api]
+request_url = ""
+model = ""
+api_key = ""
 
 [gemini_pro_api]
 api_key = "Better to put this in user.toml since that won't be visible to git."

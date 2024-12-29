@@ -17,7 +17,7 @@ from ai_prompts import (should_generate_vocabulary_list, UIUpdateCommand, run_vo
                         translate_with_context, translate_with_context_cot,
                         request_interrupt_atomic_swap, ANSIColors, ask_question)
 from library.settings_manager import settings
-from library.ai_requests import AI_SERVICE_GEMINI, AI_SERVICE_OOBABOOGA
+from library.ai_requests import AI_SERVICE_GEMINI, AI_SERVICE_OOBABOOGA, AI_SERVICE_OPENAI
 
 
 CLIPBOARD_CHECK_LATENCY_MS = 250
@@ -210,7 +210,8 @@ class JpVocabUI:
             right_controls,
             self.ai_service,
             AI_SERVICE_OOBABOOGA,
-            AI_SERVICE_GEMINI
+            AI_SERVICE_GEMINI,
+            AI_SERVICE_OPENAI
         )
         ai_dropdown.pack(side=tk.LEFT, padx=2)
 
