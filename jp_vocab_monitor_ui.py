@@ -12,6 +12,8 @@ import re
 import threading
 import time
 import tkinter as tk
+import logging
+
 
 from ai_prompts import (should_generate_vocabulary_list, UIUpdateCommand, run_vocabulary_list,
                         translate_with_context, translate_with_context_cot,
@@ -23,6 +25,16 @@ from library.ai_requests import AI_SERVICE_GEMINI, AI_SERVICE_OOBABOOGA, AI_SERV
 CLIPBOARD_CHECK_LATENCY_MS = 250
 UPDATE_LOOP_LATENCY_MS = 50
 FONT_SIZE_DEBOUNCE_DURATION = 200
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('debug.log')
+    ]
+)
 
 
 class TranslationType(str, Enum):
@@ -120,6 +132,7 @@ class JpVocabUI:
     def on_ai_service_change(self, *args):
         selected_service = self.ai_service.get()
         print(f"AI service changed to: {selected_service}")
+        logging.info(f"AI service changed to: {selected_service}")
 
     def start_ui(self):
         root = tk.Tk()
@@ -641,6 +654,7 @@ class JpVocabUI:
                 pass
             except Exception as e:
                 print(e)
+                logging.error(f"Exception while running command: {e}")
 
     def update_status(self, root: tk.Tk):
         current_time_ms = time.time()
@@ -653,6 +667,7 @@ class JpVocabUI:
                 print("EXCEPTION!")
                 print(e)
                 print(ANSIColors.END, end="")
+                logging.error(f"Exception from pyperclip: {e}")
 
         try:
             while True:
@@ -708,12 +723,8 @@ class JpVocabUI:
                 with self.sentence_lock:
                     self.locked_sentence = next_sentence
 
-                print(ANSIColors.BOLD, end="")
-                print("New sentence: ", next_sentence)
-                print(ANSIColors.END, end="")
-
+                logging.info(f"New sentence: {next_sentence}")
                 self.trigger_translation()
-
                 self.history = self.history[-self.history_length:]
 
                 # each time we add a new sentence, we add a placeholder for it to HistoryStates
@@ -728,12 +739,8 @@ class JpVocabUI:
                 with open(cache_file, 'w', encoding='utf-8') as f:
                     json.dump(self.history, f, indent=2)
             else:
-                print(ANSIColors.BOLD, end="")
-                if not japanese_detected:
-                    print("Japanese not detected: ", current_clipboard.encode('utf-8', 'ignore').decode('utf-8'))
                 if is_editing_textfield:
-                    print("Skipping textfield edit.")
-                print(ANSIColors.END, end="")
+                    logging.info("Skipping textfield edit.")
 
         self.previous_clipboard = current_clipboard
 
@@ -799,11 +806,11 @@ def generate_tts(sentence):
 
     if speech_synthesis_result.reason == speechsdk.ResultReason.Canceled:
         cancellation_details = speech_synthesis_result.cancellation_details
-        print("Speech synthesis canceled: {}".format(cancellation_details.reason))
+        logging.error("Speech synthesis canceled: {}".format(cancellation_details.reason))
         if cancellation_details.reason == speechsdk.CancellationReason.Error:
             if cancellation_details.error_details:
-                print("Error details: {}".format(cancellation_details.error_details))
-                print("Did you set the azure_tts speech resource key and region values?")
+                logging.error("Error details: {}".format(cancellation_details.error_details))
+                logging.error("Did you set the azure_tts speech resource key and region values?")
 
 
 if __name__ == '__main__':

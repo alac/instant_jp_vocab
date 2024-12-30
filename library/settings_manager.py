@@ -2,6 +2,7 @@ import tomli
 import os
 import json
 from typing import Any, Optional
+import logging
 
 THIS_FILES_FOLDER = os.path.dirname(os.path.realpath(__file__))
 ROOT_FOLDER = os.path.join(THIS_FILES_FOLDER, "..")
@@ -41,7 +42,11 @@ class SettingsManager:
         try:
             result = search_nested_dict(self._user_settings, setting_name), "user"
         except ValueError:
-            result = search_nested_dict(self._default_settings, setting_name), "default"
+            try:
+                result = search_nested_dict(self._default_settings, setting_name), "default"
+            except ValueError as e:
+                logging.error(f"setting {setting_name} not found in override, user or default settings tomls")
+                raise e
         return result
 
     def get_setting(self, setting_name: str) -> Any:

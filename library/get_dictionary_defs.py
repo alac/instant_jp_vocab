@@ -8,6 +8,7 @@ import os
 import lzma
 import shutil
 from pathlib import Path
+import logging
 
 _sentence_parser = None  # type: Optional[Tagger]
 _meaning_dict = {}   # type: dict[str, str]
@@ -154,7 +155,9 @@ def get_jamdict() -> Jamdict:
     global _jamdict
     if _jamdict is None:
         db_path = ensure_jamdict_db()
+        logging.info(f"Loading JAMDICT")
         _jamdict = Jamdict(db_path)
+        logging.info(f"Loaded JAMDICT")
     return _jamdict
 
 
@@ -170,12 +173,15 @@ def ensure_jamdict_db() -> str:
 
     os.makedirs("tmp/", exist_ok=True)
 
+    logging.info(f"Extracting JAMDICT")
     try:
         with lzma.open("data/jamdict.db.xz") as compressed:
             with open(tmp_db_path, 'wb') as uncompressed:
                 shutil.copyfileobj(compressed, uncompressed)
     except Exception as e:
+        logging.info(f"Failed to extract JAMDICT")
         raise RuntimeError(f"Failed to extract database: {e}")
+    logging.info(f"Extracted JAMDICT")
 
     return str(tmp_db_path)
 
@@ -196,12 +202,11 @@ def correct_vocab_readings(entries: list[VocabEntry]) -> list[VocabEntry]:
                 if new_readings:
                     entry.readings = new_readings
                 else:
-                    print(f"No readings found for: {entry.base_form}")
+                    logging.info(f"No readings found for: {entry.base_form}")
             else:
-                print(f"No JMDict entry found for: {entry.base_form}")
+                logging.info(f"No JMDict entry found for: {entry.base_form}")
         except Exception as e:
-            print(f"Error looking up {entry.base_form}: {str(e)}")
-
+            logging.error(f"Error looking up {entry.base_form}: {str(e)}")
         corrected_entries.append(entry)
 
     return corrected_entries

@@ -6,6 +6,7 @@ import sseclient
 import google.generativeai as google_genai
 import urllib3
 import certifi
+import logging
 
 from library.settings_manager import settings, ROOT_FOLDER
 from library.token_count import get_token_count
@@ -58,6 +59,7 @@ def run_ai_request_stream(prompt: str, custom_stopping_strings: Optional[list[st
         for chunk in run_ai_request_gemini_pro(prompt, custom_stopping_strings, temperature, max_response):
             yield chunk
     else:
+        logging.error(f"{api_choice} is unsupported for the setting ai_settings.api")
         raise ValueError(f"{api_choice} is unsupported for the setting ai_settings.api")
 
 
@@ -69,6 +71,8 @@ def run_ai_request_ooba(prompt: str, custom_stopping_strings: Optional[list[str]
         custom_stopping_strings = []
     prompt_length = get_token_count(prompt)
     if prompt_length + max_response > max_context:
+        logging.error(f"run_ai_request: the prompt ({prompt_length}) and response length ({max_response}) are "
+                      f"longer than max context! ({max_context})")
         raise ValueError(f"run_ai_request: the prompt ({prompt_length}) and response length ({max_response}) are "
                          f"longer than max context! ({max_context})")
 
@@ -128,10 +132,8 @@ def run_ai_request_ooba(prompt: str, custom_stopping_strings: Optional[list[str]
         for event in client.events():
             payload = json.loads(event.data)
             new_text = payload['choices'][0]['text']
-            print(new_text, end='')
             f.write(new_text)
             yield new_text
-    print()
 
 
 def run_ai_request_openai(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
@@ -175,10 +177,8 @@ def run_ai_request_openai(prompt: str, custom_stopping_strings: Optional[list[st
                 break
             payload = json.loads(event.data)
             new_text = payload['choices'][0]['text']
-            print(new_text, end='')
             f.write(new_text)
             yield new_text
-    print()
 
 
 def run_ai_request_gemini_pro(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,

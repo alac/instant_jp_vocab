@@ -6,6 +6,7 @@ from threading import Lock
 import os
 import datetime
 import time
+import logging
 
 from library.ai_requests import run_ai_request_stream
 from library.get_dictionary_defs import get_definitions_for_sentence, correct_vocab_readings, parse_vocab_readings
@@ -57,7 +58,7 @@ def run_vocabulary_list(sentence: str, temp: Optional[float] = None,
         }
         prompt = Template(template).safe_substitute(template_data)
     except FileNotFoundError as e:
-        print(f"Error loading prompt template: {e}")
+        logging.error(f"Error loading prompt template: {e}")
         return None
 
     last_tokens = []
@@ -74,6 +75,7 @@ def run_vocabulary_list(sentence: str, temp: Optional[float] = None,
         last_tokens.append(tok)
         last_tokens = last_tokens[-10:]
         if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
+            logging.warning(f"AI generated exited because of looping response: {last_tokens}")
             break
 
 
@@ -93,16 +95,16 @@ def get_definitions_string(sentence: str):
 
 def should_generate_vocabulary_list(sentence):
     if 5 > len(sentence) or 300 < len(sentence):
-        print("Failed length check.")
+        logging.info(f"Skipping sentence because of failed length check: {sentence}")
         return False
     if "\n" in sentence:
-        print("Found newline.")
+        logging.info(f"Skipping sentence because of newline: {sentence}")
         return False
     jp_grammar_parts = ["・", '【', "】", "。", "」", "「", "は" "に", "が", "な", "？", "か", "―", "…", "！", "』", "『"]
     jp_grammar_parts = jp_grammar_parts + "せぞぼたぱび".split()
     if [p for p in jp_grammar_parts if p in sentence]:
         return True
-    print("No sentence parts detected.")
+    logging.info(f"Skipping sentence because no Japanese detected: {sentence}")
     return False
 
 
@@ -127,10 +129,9 @@ def translate_with_context(history, sentence, temp=None, style="",
         }
         prompt = Template(template).safe_substitute(template_data)
     except FileNotFoundError as e:
-        print(f"Error loading prompt template: {e}")
+        logging.error(f"Error loading prompt template: {e}")
         return None
 
-    print("Translation: ")
     last_tokens = []
     if update_queue is not None:
         if index == 0:
@@ -152,6 +153,7 @@ def translate_with_context(history, sentence, temp=None, style="",
         last_tokens.append(tok)
         last_tokens = last_tokens[-10:]
         if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
+            logging.warning(f"AI generated exited because of looping response: {last_tokens}")
             break
 
 
@@ -185,6 +187,8 @@ def translate_with_context_cot(history, sentence, temp=None,
                     for v in vocab:
                         word_readings = ",".join(v.readings)
                         readings_string += f"\n{v.base_form} [{word_readings}] - {v.meaning}"
+                else:
+                    logging.warning(f"No vocabulary parsed from suggested_readings: {suggested_readings}")
             else:
                 readings_string = "\nSuggested Readings:" + suggested_readings
         template_data = {
@@ -195,7 +199,7 @@ def translate_with_context_cot(history, sentence, temp=None,
         }
         prompt = Template(template).safe_substitute(template_data)
     except FileNotFoundError as e:
-        print(f"Error loading prompt template: {e}")
+        logging.error(f"Error loading prompt template: {e}")
         return None
 
     result = ""
@@ -217,6 +221,7 @@ def translate_with_context_cot(history, sentence, temp=None,
         last_tokens.append(tok)
         last_tokens = last_tokens[-10:]
         if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
+            logging.warning(f"AI generated exited because of looping response: {last_tokens}")
             break
 
     if len(sentence) > 30 and settings.get_setting_fallback('translate_cot.save_cot_outputs', fallback=False):
@@ -261,7 +266,7 @@ def ask_question(question: str, sentence: str, history: list[str], temp: Optiona
         }
         prompt = Template(template).safe_substitute(template_data)
     except FileNotFoundError as e:
-        print(f"Error loading prompt template: {e}")
+        logging.error(f"Error loading prompt template: {e}")
         return None
 
     last_tokens = []
@@ -279,6 +284,7 @@ def ask_question(question: str, sentence: str, history: list[str], temp: Optiona
         last_tokens.append(tok)
         last_tokens = last_tokens[-10:]
         if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
+            logging.warning(f"AI generated exited because of looping response: {last_tokens}")
             break
 
 
