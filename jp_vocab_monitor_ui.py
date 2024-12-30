@@ -113,7 +113,7 @@ class JpVocabUI:
         if os.path.isfile(cache_file):
             with open(cache_file, 'r', encoding='utf-8') as f:
                 self.history = json.load(f)
-        self.history_length = settings.get_setting('vocab_list.ai_translation_history_length')
+        self.history_length = settings.get_setting('general.translation_history_length')
         self.history_states = []  # type: list[HistoryState]
         self.history_states_index = -1
 
@@ -360,7 +360,6 @@ class JpVocabUI:
                 "translate",
                 self.ui_sentence,
                 self.history[:],
-                temp=0,
                 index=1,
                 api_override=self.ai_service.get()))
         elif self.translation_style.get() == TranslationType.BestOfThree:
@@ -368,14 +367,14 @@ class JpVocabUI:
                 "translate",
                 self.ui_sentence,
                 self.history[:],
-                temp=0,
+                temp=settings.get_setting_fallback('translate_best_of_three.first_temperature', .7),
                 index=1,
                 api_override=self.ai_service.get()))
             self.command_queue.put(MonitorCommand(
                 "translate",
                 self.ui_sentence,
                 self.history[:],
-                temp=0,
+                temp=settings.get_setting_fallback('translate_best_of_three.second_temperature', .7),
                 style="Aim for a literal translation.",
                 index=2,
                 api_override=self.ai_service.get()))
@@ -383,16 +382,15 @@ class JpVocabUI:
                 "translate",
                 self.ui_sentence,
                 self.history[:],
-                temp=0,
+                temp=settings.get_setting_fallback('translate_best_of_three.third_temperature', .7),
                 style="Aim for a natural translation.",
                 index=3,
                 api_override=self.ai_service.get()))
-            if settings.get_setting_fallback('vocab_list.enable_ai_translation_validation', False):
+            if settings.get_setting_fallback('translate_best_of_three.enable_validation', False):
                 self.command_queue.put(MonitorCommand("translation_validation",
                                                       self.ui_sentence,
                                                       self.history[:],
                                                       "",
-                                                      temp=0,
                                                       api_override=self.ai_service.get(),
                                                       update_token_key="translation_validation"))
         elif self.translation_style.get() == TranslationType.ChainOfThought:
@@ -400,7 +398,6 @@ class JpVocabUI:
                 "translate_cot",
                 self.ui_sentence,
                 self.history[:],
-                temp=0,
                 api_override=self.ai_service.get(),
                 update_token_key="translate"
             ))
@@ -409,13 +406,11 @@ class JpVocabUI:
                 "translate",
                 self.ui_sentence,
                 self.history[:],
-                temp=0,
                 api_override=self.ai_service.get()))
             self.command_queue.put(MonitorCommand(
                 "translate_cot",
                 self.ui_sentence,
                 self.history[:],
-                temp=0,
                 api_override=self.ai_service.get(),
                 update_token_key="translation_validation"))
         elif self.translation_style.get() == TranslationType.DefineAndChainOfThought:
@@ -423,13 +418,11 @@ class JpVocabUI:
                 "define",
                 self.ui_sentence,
                 [],
-                temp=0,
                 api_override=self.ai_service.get()))
             self.command_queue.put(MonitorCommand(
                 "translate_cot",
                 self.ui_sentence,
                 self.history[:],
-                temp=0,
                 api_override=self.ai_service.get(),
                 update_token_key="translation_validation",
                 include_readings=True))
@@ -492,10 +485,8 @@ class JpVocabUI:
                         self.ui_translation_validation = ""
                 if self.last_command.command_type == "define":
                     self.ui_definitions = ""
-                    self.last_command.temp = settings.get_setting('vocab_list.ai_definitions_temp')
                 if self.last_command.command_type == "qanda":
                     self.ui_response = ""
-                    self.last_command.temp = settings.get_setting('vocab_list.ai_qanda_temp')
                 self.show_qanda = self.last_command.command_type == "qanda"
                 self.command_queue.put(self.last_command)
 

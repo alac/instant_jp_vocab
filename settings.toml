@@ -1,3 +1,5 @@
+# This is the settings file. To override values here, create a user.toml by coping this.
+
 [ai_settings]
 # Oogabooga or Gemini or OpenAI
 api = "Oogabooga"
@@ -9,13 +11,16 @@ context_length = 4096
 preset_name = 'none'
 
 [openai_api]
+# supports service that implements a OpenAI-Completions endpoint
 request_url = ""
 model = ""
 api_key = ""
 
 [gemini_pro_api]
-api_key = "Better to put this in user.toml since that won't be visible to git."
-# pick one of the values from https://ai.google.dev/gemini-api/docs/models/gemini
+# You can get a free api key here: https://ai.google.dev/gemini-api/docs/api-key
+api_key = ""
+# Pick one of the values from https://ai.google.dev/gemini-api/docs/models/gemini
+# Mind the quota limits if you're using a higher quality model
 api_model = "gemini-1.5-flash"
 system_prompt = """Respond directly with only the requested information.
 Do not add any conversational elements, greetings, or explanations.
@@ -24,8 +29,8 @@ Use examples provided as a guide and follow the pattern to complete the task."""
 [azure_tts]
 # Azure has a generous speech synthesis free plan
 # Follow the instructions here to setup an account: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/get-started-text-to-speech?tabs=windows%2Cterminal&pivots=programming-language-python#prerequisites
-speech_key = "Better to put this in user.toml since that won't be visible to git."
-speech_region = "Better to put this in user.toml since that won't be visible to git."
+speech_key = ""
+speech_region = ""
 # Provided JP voices are:
 #ja-JP-NanamiNeural
 #ja-JP-KeitaNeural
@@ -37,30 +42,46 @@ speech_region = "Better to put this in user.toml since that won't be visible to 
 #ja-JP-MasaruMultilingualNeural
 speech_voice = "ja-JP-KeitaNeural"
 
-[vocab_list]
+[define]
 define_prompt_filepath = "prompts/define_base_forms.txt"
+temperature = 0.7
+
+[translate]
 translate_prompt_filepath = "prompts/translate.txt"
-q_and_a_prompt_filepath = "prompts/q_and_a.txt"
+temperature = 0.7
+
+[translate_cot]
+# Aka 'With Analysis (CoT)'. The idea is to ask questions to direct the translation.
 cot_prompt_filepath = "prompts/cot_translation.txt"
 cot_examples_filepath = "prompts/examples/cot_translation_original.txt"
 save_cot_outputs = false
-# Changes the behavior of Define->Analysis to look up readings in JMDict, since the AI is often wrong
+temperature = 0.7
+
+[define_into_analysis]
+# Aka 'Define->Analysis'. The idea is to improve the quality of readings by supplying them from a trusted source.
+# enable_jmdict_replacements changes the behavior of Define->Analysis to look up readings in JMDict.
 # The first time this is ON, it will extract JMDict which is VERY slow.
 enable_jmdict_replacements = false
-# Suggests readings to the AI. Improves lower quality AI results.
-ai_definitions_add_readings = false
-ai_definitions_temp = 0.7
+
+[translate_best_of_three]
+# Aka 'Best of Three'. The idea is ask for three different translations and (optionally) ask the AI to pick the best one.
+# enable_validation asks the AI to judge which translation was best. Very sketchy.
+enable_validation = false
+first_temperature = 0.0
+second_temperature = 0.5
+third_temperature = 1.0
+
+[q_and_a]
+q_and_a_prompt_filepath = "prompts/q_and_a.txt"
+temperature = 0.0
+
+[general]
 # The number of previous clipboard values to send to the AI as context.
-ai_translation_history_length = 15
+translation_history_length = 15
 # An additional 'context' to send with the AI request.
 # Use this to describe lines that will be translated.
 # For a story, this might be a synopsis or a list of characters.
-ai_translation_context = """>STORY_INFO_START
+translation_context = """>STORY_INFO_START
 Example story data. The main character is the protagonist.
 >STORY_INFO_END
 """
-ai_translation_temp = 0.7
-# Asks the AI to judge which translation was best. Very sketchy.
-enable_ai_translation_validation = false
-ai_qanda_temp = 0.0
-

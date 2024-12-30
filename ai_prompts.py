@@ -42,13 +42,14 @@ def request_interrupt_atomic_swap(new_value: bool) -> bool:
     return old_value
 
 
-def run_vocabulary_list(sentence: str, temp: float,
+def run_vocabulary_list(sentence: str, temp: Optional[float] = None,
                         update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None,
                         api_override: Optional[str] = None):
-
+    if temp is None:
+        temp = settings.get_setting('define.temperature')
     request_interrupt_atomic_swap(False)
 
-    prompt_file = settings.get_setting('vocab_list.define_prompt_filepath')
+    prompt_file = settings.get_setting('define.define_prompt_filepath')
     try:
         template = read_file_or_throw(prompt_file)
         template_data = {
@@ -109,17 +110,17 @@ def translate_with_context(history, sentence, temp=None, style="",
                            update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None, index: int = 0,
                            api_override: Optional[str] = None):
     if temp is None:
-        temp = settings.get_setting('vocab_list.ai_translation_temp')
+        temp = settings.get_setting('translate.temperature')
 
     request_interrupt_atomic_swap(False)
-    prompt_file = settings.get_setting('vocab_list.translate_prompt_filepath')
+    prompt_file = settings.get_setting('translate.translate_prompt_filepath')
     try:
         template = read_file_or_throw(prompt_file)
         previous_lines = ""
         if history:
             previous_lines = "Previous lines:\n" + "\n".join(f"- {line}" for line in history)
         template_data = {
-            'context': settings.get_setting('vocab_list.ai_translation_context'),
+            'context': settings.get_setting('general.translation_context'),
             'previous_lines': previous_lines,
             'sentence': sentence,
             'style': style,
@@ -160,11 +161,11 @@ def translate_with_context_cot(history, sentence, temp=None,
                                update_token_key: Optional[str] = 'translate',
                                suggested_readings: Optional[str] = None):
     if temp is None:
-        temp = settings.get_setting('vocab_list.ai_translation_temp')
+        temp = settings.get_setting('translate_cot.temperature')
 
     request_interrupt_atomic_swap(False)
-    prompt_file = settings.get_setting('vocab_list.cot_prompt_filepath')
-    examples_file = settings.get_setting('vocab_list.cot_examples_filepath')
+    prompt_file = settings.get_setting('translate_cot.cot_prompt_filepath')
+    examples_file = settings.get_setting('translate_cot.cot_examples_filepath')
 
     readings_string = ""
     try:
@@ -173,9 +174,9 @@ def translate_with_context_cot(history, sentence, temp=None,
         previous_lines = ""
         if history:
             previous_lines = "Previous lines:\n" + "\n".join(f"- {line}" for line in history)
-        context = settings.get_setting('vocab_list.ai_translation_context')
+        context = settings.get_setting('general.translation_context')
         if suggested_readings:
-            if settings.get_setting('vocab_list.enable_jmdict_replacements'):
+            if settings.get_setting('define_into_analysis.enable_jmdict_replacements'):
                 vocab = parse_vocab_readings(suggested_readings)
                 vocab = correct_vocab_readings(vocab)
 
@@ -218,7 +219,7 @@ def translate_with_context_cot(history, sentence, temp=None,
         if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
             break
 
-    if len(sentence) > 30 and settings.get_setting_fallback('vocab_list.save_cot_outputs', fallback=False):
+    if len(sentence) > 30 and settings.get_setting_fallback('translate_cot.save_cot_outputs', fallback=False):
         input_and_output = prompt.replace(examples, "") + "\n" + result
 
         human_readable = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -230,9 +231,12 @@ def translate_with_context_cot(history, sentence, temp=None,
             f.write(input_and_output)
 
 
-def ask_question(question: str, sentence: str, history: list[str], temp: float,
+def ask_question(question: str, sentence: str, history: list[str], temp: Optional[float] = None,
                  update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None, update_token_key: str = "qanda",
                  api_override: Optional[str] = None):
+    if temp is None:
+        temp = settings.get_setting('q_and_a.temperature')
+
     request_interrupt_atomic_swap(False)
 
     previous_lines_list = [""]
@@ -247,11 +251,11 @@ def ask_question(question: str, sentence: str, history: list[str], temp: float,
     print("___\n")
     print(ANSIColors.END, end="")
 
-    prompt_file = settings.get_setting('vocab_list.q_and_a_prompt_filepath')
+    prompt_file = settings.get_setting('q_and_a.q_and_a_prompt_filepath')
     try:
         template = read_file_or_throw(prompt_file)
         template_data = {
-            'context': settings.get_setting('vocab_list.ai_translation_context'),
+            'context': settings.get_setting('general.translation_context'),
             'previous_lines': previous_lines,
             'question': question,
         }
