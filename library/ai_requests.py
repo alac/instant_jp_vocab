@@ -4,11 +4,14 @@ import os
 from typing import Optional
 import sseclient
 import google.generativeai as google_genai
+import urllib3
+import certifi
 
 from library.settings_manager import settings, ROOT_FOLDER
 from library.token_count import get_token_count
 
 AI_SERVICE_OOBABOOGA = "Oogabooga"
+AI_SERVICE_OPENAI = "OpenAI"
 AI_SERVICE_GEMINI = "Gemini"
 
 
@@ -16,12 +19,19 @@ class EmptyResponseException(ValueError):
     pass
 
 
+def create_http_client():
+    return urllib3.PoolManager(
+        cert_reqs="CERT_REQUIRED",
+        ca_certs=certifi.where()
+    )
+
+
 def run_ai_request(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
                    clean_blank_lines: bool = True, max_response: int = 2048, ban_eos_token: bool = True,
                    print_prompt=True):
     result = ""
     for tok in run_ai_request_stream(prompt, custom_stopping_strings, temperature, max_response,
-                                               ban_eos_token, print_prompt):
+                                     ban_eos_token, print_prompt):
         result += tok
     if clean_blank_lines:
         result = "\n".join([l for l in "".join(result).splitlines() if len(l.strip()) > 0])
@@ -39,6 +49,10 @@ def run_ai_request_stream(prompt: str, custom_stopping_strings: Optional[list[st
     if api_choice == AI_SERVICE_OOBABOOGA:
         for tok in run_ai_request_ooba(prompt, custom_stopping_strings, temperature, max_response, ban_eos_token,
                                        print_prompt):
+            yield tok
+    elif api_choice == AI_SERVICE_OPENAI:
+        for tok in run_ai_request_openai(prompt, custom_stopping_strings, temperature, max_response,
+                                         print_prompt):
             yield tok
     elif api_choice == AI_SERVICE_GEMINI:
         for chunk in run_ai_request_gemini_pro(prompt, custom_stopping_strings, temperature, max_response):
@@ -112,6 +126,53 @@ def run_ai_request_ooba(prompt: str, custom_stopping_strings: Optional[list[str]
         print(data['prompt'], end='')
     with open(os.path.join(ROOT_FOLDER, "response.txt"), "w", encoding='utf-8') as f:
         for event in client.events():
+            payload = json.loads(event.data)
+            new_text = payload['choices'][0]['text']
+            print(new_text, end='')
+            f.write(new_text)
+            yield new_text
+    print()
+
+
+def run_ai_request_openai(prompt: str, custom_stopping_strings: Optional[list[str]] = None, temperature: float = .1,
+                          max_response: int = 2048, print_prompt=True):
+    request_url = settings.get_setting('openai_api.request_url')
+    data = {
+        "model": settings.get_setting('openai_api.model'),
+        "prompt": prompt,
+        "echo": False,
+        "frequency_penalty": 0,
+        "logprobs": 0,
+        "max_tokens": max_response,
+        "presence_penalty": 0,
+        "stop": custom_stopping_strings,
+        "stream": True,
+        "stream_options": None,
+        "suffix": None,
+        "temperature": temperature,
+        "top_p": 1
+    }
+    api_key = settings.get_setting('openai_api.api_key')
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': f'Bearer {api_key}'
+    }
+    http = create_http_client()
+    stream_response = http.request(
+        'POST',
+        request_url,
+        headers=headers,
+        body=json.dumps(data),
+        preload_content=False)
+    client = sseclient.SSEClient(stream_response)
+
+    if print_prompt:
+        print(data['prompt'], end='')
+    with open(os.path.join(ROOT_FOLDER, "response.txt"), "w", encoding='utf-8') as f:
+        for event in client.events():
+            if event.data == "[DONE]":
+                break
             payload = json.loads(event.data)
             new_text = payload['choices'][0]['text']
             print(new_text, end='')

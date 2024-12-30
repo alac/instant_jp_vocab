@@ -17,10 +17,11 @@ from ai_prompts import (should_generate_vocabulary_list, UIUpdateCommand, run_vo
                         translate_with_context, translate_with_context_cot,
                         request_interrupt_atomic_swap, ANSIColors, ask_question)
 from library.settings_manager import settings
-from library.ai_requests import AI_SERVICE_GEMINI, AI_SERVICE_OOBABOOGA
+from library.ai_requests import AI_SERVICE_GEMINI, AI_SERVICE_OOBABOOGA, AI_SERVICE_OPENAI
 
 
 CLIPBOARD_CHECK_LATENCY_MS = 250
+UPDATE_LOOP_LATENCY_MS = 50
 FONT_SIZE_DEBOUNCE_DURATION = 200
 
 
@@ -30,12 +31,13 @@ class TranslationType(str, Enum):
     BestOfThree = 'Best of Three'
     ChainOfThought = 'With Analysis (CoT)'
     TranslateAndChainOfThought = 'Post-Hoc Analysis'
+    DefineAndChainOfThought = 'Define->Analysis'
 
 
 class MonitorCommand:
     def __init__(self, command_type: str, sentence: str, history: list[str], prompt: str = None,
                  temp: Optional[float] = None, style: str = None, index: int = 0, api_override: Optional[str] = None,
-                 update_token_key: Optional[str] = None):
+                 update_token_key: Optional[str] = None, include_readings: bool = False):
         self.command_type = command_type
         self.sentence = sentence
         self.history = history
@@ -45,6 +47,7 @@ class MonitorCommand:
         self.index = index
         self.api_override = api_override
         self.update_token_key = update_token_key
+        self.include_readings = include_readings
 
 
 class HistoryState:
@@ -195,7 +198,8 @@ class JpVocabUI:
             TranslationType.Translate,
             TranslationType.BestOfThree,
             TranslationType.ChainOfThought,
-            TranslationType.TranslateAndChainOfThought
+            TranslationType.TranslateAndChainOfThought,
+            TranslationType.DefineAndChainOfThought
         )
         translate_dropdown.pack(side=tk.LEFT, padx=2)
 
@@ -206,7 +210,8 @@ class JpVocabUI:
             right_controls,
             self.ai_service,
             AI_SERVICE_OOBABOOGA,
-            AI_SERVICE_GEMINI
+            AI_SERVICE_GEMINI,
+            AI_SERVICE_OPENAI
         )
         ai_dropdown.pack(side=tk.LEFT, padx=2)
 
@@ -413,6 +418,21 @@ class JpVocabUI:
                 temp=0,
                 api_override=self.ai_service.get(),
                 update_token_key="translation_validation"))
+        elif self.translation_style.get() == TranslationType.DefineAndChainOfThought:
+            self.command_queue.put(MonitorCommand(
+                "define",
+                self.ui_sentence,
+                [],
+                temp=0,
+                api_override=self.ai_service.get()))
+            self.command_queue.put(MonitorCommand(
+                "translate_cot",
+                self.ui_sentence,
+                self.history[:],
+                temp=0,
+                api_override=self.ai_service.get(),
+                update_token_key="translation_validation",
+                include_readings=True))
 
     def trigger_basic_translation(self):
         self._prep_translation()
@@ -604,16 +624,22 @@ class JpVocabUI:
                                  update_queue=self.ui_update_queue, update_token_key=command.update_token_key,
                                  api_override=command.api_override)
                 if command.command_type == "translate_cot":
+                    suggested_readings = None
+                    if command.include_readings:
+                        if not self.ui_update_queue.empty():
+                            time.sleep(3 * UPDATE_LOOP_LATENCY_MS / 1000.0)
+                        suggested_readings = self.ui_definitions
+                        self.ui_definitions = ""
                     translate_with_context_cot(command.history,
                                                command.sentence,
                                                update_queue=self.ui_update_queue,
                                                temp=command.temp,
                                                update_token_key=command.update_token_key,
-                                               api_override=command.api_override)
+                                               api_override=command.api_override,
+                                               suggested_readings=suggested_readings)
                     self.ui_update_queue.put(UIUpdateCommand(command.update_token_key, command.sentence, "\n"))
                 if command.command_type == "define":
-                    add_readings = settings.get_setting('vocab_list.ai_definitions_add_readings')
-                    run_vocabulary_list(command.sentence, temp=command.temp, use_dictionary=add_readings,
+                    run_vocabulary_list(command.sentence, temp=command.temp,
                                         update_queue=self.ui_update_queue, api_override=command.api_override)
                 if command.command_type == "qanda":
                     ask_question(command.prompt, command.sentence, command.history, temp=command.temp,
@@ -644,7 +670,7 @@ class JpVocabUI:
             pass
 
         self.update_ui()
-        root.after(50, lambda: self.update_status(root))
+        root.after(UPDATE_LOOP_LATENCY_MS, lambda: self.update_status(root))
 
     def check_clipboard(self):
         current_clipboard = pyperclip.paste()

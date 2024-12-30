@@ -1,5 +1,5 @@
 [ai_settings]
-# Oogabooga or Gemini
+# Oogabooga or Gemini or OpenAI
 api = "Oogabooga"
 
 [oobabooga_api]
@@ -7,6 +7,11 @@ request_url = 'http://127.0.0.1:5000/v1/completions'
 context_length = 4096
 # preset_name should be a oobabooga preset; 'none' will use the defaults hardcoded into library/ai_requests.py
 preset_name = 'none'
+
+[openai_api]
+request_url = ""
+model = ""
+api_key = ""
 
 [gemini_pro_api]
 api_key = "Better to put this in user.toml since that won't be visible to git."
@@ -33,6 +38,11 @@ speech_region = "Better to put this in user.toml since that won't be visible to 
 speech_voice = "ja-JP-KeitaNeural"
 
 [vocab_list]
+# Determines format of the "define" behavior
+define_prompt_filepath = "prompts/define_base_forms.txt"
+# Changes the behavior of Define->Analysis to look up readings in JMDict, since the AI is often wrong
+# The first time this is ON, it will extract JMDict which is VERY slow.
+enable_jmdict_replacements = false
 # Determines format of the "translation with analysis" behavior (also known as COT)
 cot_prompt_filepath = "prompts/cot_translation.txt"
 cot_examples_filepath = "prompts/examples/cot_translation_original.txt"

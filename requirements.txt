@@ -7,3 +7,4 @@ sentencepiece~=0.2.0
 sseclient-py
 tomli~=2.0.1
 unidic
+jamdict

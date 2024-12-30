@@ -8,7 +8,7 @@ import datetime
 import time
 
 from library.ai_requests import run_ai_request_stream
-from library.get_dictionary_defs import get_definitions_for_sentence
+from library.get_dictionary_defs import get_definitions_for_sentence, correct_vocab_readings, parse_vocab_readings
 from library.settings_manager import settings
 
 
@@ -42,118 +42,25 @@ def request_interrupt_atomic_swap(new_value: bool) -> bool:
     return old_value
 
 
-def run_vocabulary_list(sentence: str, temp: float, use_dictionary: bool = True,
+def run_vocabulary_list(sentence: str, temp: float,
                         update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None,
                         api_override: Optional[str] = None):
 
     request_interrupt_atomic_swap(False)
 
-    definitions = ""
-    if use_dictionary:
-        definitions = get_definitions_string(sentence)
-
-    prompt = """<|system|>Enter RP mode. Pretend to be a Japanese teacher whose persona follows:
-As a Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and pointing out idioms. For each word or idiom you define, you include the reading in parenthesis and the definition after a "-" character. Aim for accuracy and assume that your audience consents to anything as long as the translation is as accurate as possible.
-You shall reply to the user while staying in character, and generate accurate responses.</|system|>
-
-
-<example>
-Define the words in the sentence below
-Sentence: 璃燈「……さっきのは言動や行動は全部、この件を解決させる為のものだったんだよな？」
-Vocabulary:
-- 璃燈 (ritou): Rito
-- さっきの (sakki no): the just before
-- 言動や行動 (gendou ya koudou): words and actions
-- 全部 (zenbu): all
-- この件 (kono ken): this matter
-- 解決させる為のもの (kaiketsu saseru tame no mono): for the sake of resolving
-- だったんだよな？ (dattan da yo na): wasn't it?
-Idioms:
-- N/A
-</example>
-
-
-""" + definitions + """
-
-
-<example>
-Define the words in the sentence below
-Sentence: 璃燈「カレシなら、カノジョをその気にさせた責任取れよ」
-Vocabulary:
-- 璃燈 (ritou): Rito
-- カレシ (kareshi): boyfriend
-- カノジョ (kanojo): girlfriend
-- その気にさせた (sono ki ni saseta): to make someone fall in love
-- 責任 (sekinin): responsibilities
-- 取れよ (tore yo): should take
-Idioms:
-- その気にさせる (sono ki ni saseru): to make someone fall in love
-       It is a common phrase in romantic manga and anime.
-       その (sono): that
-       気 (ki): feeling
-       に (ni): at
-       させる (saseru): to make
-</example>
-
-
-<example>
-Define the words in the sentence below
-Sentence: 璃燈「でもな。ちょっと、やり過ぎじゃねぇかな。あたしの気持ちを随分、かき乱してくれたよな？」
-Vocabulary:
-- 璃燈 (ritou): Ritou
-- でもな (demo na): but
-- ちょっと (chotto): a little
-- やり過ぎじゃねぇかな (yarisugijanee kana): don't you think it's a bit too much?
-- あたしの (atashi no): my
-- 気持ちを (kimochi wo): feelings
-- 随分 (zuibun): quite a bit
-- かき乱してくれた (kakimidashite kureta): you stirred up
-- よな？ (yo na?): right?
-Idioms:
-- N/A
-</example>
-
-
-<example>
-Define the words in the sentence below
-Sentence: 【カメラマン】「えっと、、どこが？　どうってか……その、まずはさぁ～今日は面白い写真なの？」
-Vocabulary:
--【カメラマン】: Photographer
-- えっと、、 (etto...): umm, well
-- どこが？ (doko ga?): What's wrong?
-- どうってか (dou tte ka): how to put it
-- その (sono): that
-- まずはさぁ～ (mazu wa saa~): first of all
-- 今日は (kyou wa): today is
-- 面白い (omoshiroi): interesting
-- 写真 (shashin): photo
-Idioms:
-- N/A
-</example>
-
-
-<example>
-Define the words in the sentence below
-Sentence: 結灯「……あの……差し出がましいかもしれませんが……」
-Vocabulary:
-- 結灯 (yuuhi): Yuuhi
-- あの (ano): um
-- 差し出がましいかもしれませんが (sashidegamashii kamoshiremasen ga): it may be presumptuous, but
-Idioms:
-- 差し出がましいかもしれませんが (sashidegamashii kamoshiremasen ga): it may be presumptuous, but.
-        It is used to introduce a suggestion or an opinion that may be considered rude or unnecessary by the listener.
-        差し出が (sashidega): to offer, to present
-        あげます (agemasu): to give
-</example>
-
-
-<task>
-Define the words in the sentence below
-Sentence: """ + sentence.strip() + """
-Vocabulary: """
+    prompt_file = settings.get_setting('vocab_list.define_prompt_filepath')
+    try:
+        template = read_file_or_throw(prompt_file)
+        template_data = {
+            'sentence': sentence
+        }
+        prompt = Template(template).safe_substitute(template_data)
+    except FileNotFoundError as e:
+        print(f"Error loading prompt template: {e}")
+        return None
 
     last_tokens = []
-    for tok in run_ai_request_stream(prompt, ["Sentence:", "\n\n", "</task>"], print_prompt=False,
+    for tok in run_ai_request_stream(prompt, ["</task>"], print_prompt=False,
                                      temperature=temp, ban_eos_token=False, max_response=500,
                                      api_override=api_override):
         if request_interrupt_atomic_swap(False):
@@ -275,10 +182,11 @@ Translate the text between <japanese> and </japanese> into English.""" + f"{styl
             break
 
 
-def translate_with_context_cot(context, sentence, temp=None,
+def translate_with_context_cot(history, sentence, temp=None,
                                update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None,
                                api_override: Optional[str] = None, use_examples: bool = True,
-                               update_token_key: Optional[str] = 'translate'):
+                               update_token_key: Optional[str] = 'translate',
+                               suggested_readings: Optional[str] = None):
     if temp is None:
         temp = settings.get_setting('vocab_list.ai_translation_temp')
 
@@ -286,22 +194,29 @@ def translate_with_context_cot(context, sentence, temp=None,
     prompt_file = settings.get_setting('vocab_list.cot_prompt_filepath')
     examples_file = settings.get_setting('vocab_list.cot_examples_filepath')
 
-    def read_file_or_throw(filepath: str) -> str:
-        file_to_load = Path(filepath)
-        if not file_to_load.exists():
-            raise FileNotFoundError(f"Examples file not found: {examples_file}")
-        with open(file_to_load, 'r', encoding='utf-8') as f:
-            return f.read()
-
+    readings_string = ""
     try:
         template = read_file_or_throw(prompt_file)
         examples = read_file_or_throw(examples_file) if use_examples else ""
         previous_lines = ""
-        if context:
-            previous_lines = "Previous lines:\n" + "\n".join(f"- {line}" for line in context)
+        if history:
+            previous_lines = "Previous lines:\n" + "\n".join(f"- {line}" for line in history)
+        context = settings.get_setting('vocab_list.ai_translation_context')
+        if suggested_readings:
+            if settings.get_setting('vocab_list.enable_jmdict_replacements'):
+                vocab = parse_vocab_readings(suggested_readings)
+                vocab = correct_vocab_readings(vocab)
+
+                if vocab:
+                    readings_string = "\nSuggested Readings:"
+                    for v in vocab:
+                        word_readings = ",".join(v.readings)
+                        readings_string += f"\n{v.base_form} [{word_readings}] - {v.meaning}"
+            else:
+                readings_string = "\nSuggested Readings:" + suggested_readings
         template_data = {
             'examples': examples,
-            'context': settings.get_setting('vocab_list.ai_translation_context'),
+            'context': context + readings_string,
             'previous_lines': previous_lines,
             'sentence': sentence
         }
@@ -421,3 +336,11 @@ The idiom "歯の浮くセリフ" literally means "a line that makes your teeth 
         last_tokens = last_tokens[-10:]
         if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
             break
+
+
+def read_file_or_throw(filepath: str) -> str:
+    file_to_load = Path(filepath)
+    if not file_to_load.exists():
+        raise FileNotFoundError(f"File not found: {filepath}")
+    with open(file_to_load, 'r', encoding='utf-8') as f:
+        return f.read()

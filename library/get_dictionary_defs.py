@@ -1,14 +1,21 @@
 from fugashi import Tagger
 import json
 from typing import NamedTuple, Optional
-
+import re
+from dataclasses import dataclass
+from jamdict import Jamdict
+import os
+import lzma
+import shutil
+from pathlib import Path
 
 _sentence_parser = None  # type: Optional[Tagger]
 _meaning_dict = {}   # type: dict[str, str]
+_jamdict: Optional[Jamdict] = None
 USE_BASE_WORDS = False
 
 
-def _initialize():
+def _initialize_fugashi():
     global _sentence_parser, _meaning_dict
     if _sentence_parser:
         return
@@ -31,7 +38,7 @@ def get_definitions_for_sentence(sentence: str) -> list[WordDefinition]:
     :param sentence:
     :return:
     """
-    _initialize()
+    _initialize_fugashi()
     _sentence_parser.parse(sentence)
 
     readings = []
@@ -113,7 +120,110 @@ def hiragana_reading(katakana_reading: str) -> str:
     return "".join(result)
 
 
+@dataclass
+class VocabEntry:
+    base_form: str
+    readings: list[str]
+    meaning: str
+
+
+def parse_vocab_readings(text: str) -> list[VocabEntry]:
+    """
+    extracts '件' from a line like:
+    - 件 [base form] (ken): matter, case
+    """
+    # Matches: "- word [base form] (reading): meaning"
+    vocab_pattern = r'-\s+(\S+)\s+\[([^\]]+)\]\s*\(([^)]+)\):\s*([^\n]+)'
+    matches = re.finditer(vocab_pattern, text)
+
+    vocab_entries = []
+    for match in matches:
+        word, form_type, reading, meaning = match.groups()
+        if 'base form' in form_type.lower():
+            vocab_entries.append(VocabEntry(
+                base_form=word,
+                readings=[reading.strip()],
+                meaning=meaning.strip()
+            ))
+
+    return vocab_entries
+
+
+def get_jamdict() -> Jamdict:
+    """Lazy initialization of Jamdict with custom DB path."""
+    global _jamdict
+    if _jamdict is None:
+        db_path = ensure_jamdict_db()
+        _jamdict = Jamdict(db_path)
+    return _jamdict
+
+
+def ensure_jamdict_db() -> str:
+    """
+    Ensures jamdict.db exists in the temp directory.
+    Returns the path to the database.
+    """
+    tmp_db_path = Path('tmp/jamdict.db')
+
+    if tmp_db_path.exists():
+        return str(tmp_db_path)
+
+    os.makedirs("tmp/", exist_ok=True)
+
+    try:
+        with lzma.open("data/jamdict.db.xz") as compressed:
+            with open(tmp_db_path, 'wb') as uncompressed:
+                shutil.copyfileobj(compressed, uncompressed)
+    except Exception as e:
+        raise RuntimeError(f"Failed to extract database: {e}")
+
+    return str(tmp_db_path)
+
+
+def correct_vocab_readings(entries: list[VocabEntry]) -> list[VocabEntry]:
+    """
+    Takes a list of VocabEntry and returns an updated list with verified readings.
+    Preserves original entries if no readings found.
+    """
+    jam = get_jamdict()
+    corrected_entries = []
+
+    for entry in entries:
+        try:
+            result = jam.lookup(entry.base_form)
+            if result.entries:
+                new_readings = [str(kana) for kana in result.entries[0].kana_forms]
+                if new_readings:
+                    entry.readings = new_readings
+                else:
+                    print(f"No readings found for: {entry.base_form}")
+            else:
+                print(f"No JMDict entry found for: {entry.base_form}")
+        except Exception as e:
+            print(f"Error looking up {entry.base_form}: {str(e)}")
+
+        corrected_entries.append(entry)
+
+    return corrected_entries
+
+
 if __name__ == "__main__":
     text = "麩菓子は、麩を主材料とした日本の菓子。"
-    for reading in get_definitions_for_sentence(text):
-        print(reading)
+    for r in get_definitions_for_sentence(text):
+        print(r)
+
+    text = """
+    Vocabulary:
+    - カメラマン [base form] (kameraman): photographer
+    - 件 [base form] (ken): matter, case
+    - 解決 [base form] (kaiketsu): resolution, settlement
+    - させる [base form of causative] (saseru): to make/let someone do
+    - 為 [base form] (tame): for the sake of
+    """
+    entries = parse_vocab_readings(text)
+    for entry in entries:
+        print(f"{entry.base_form} ({entry.readings}): {entry.meaning}")
+
+    updated_entries = correct_vocab_readings(entries)
+    for entry in updated_entries:
+        print(f"{entry.base_form} ({entry.readings}): {entry.meaning}")
