@@ -124,6 +124,5 @@ Idioms:
 </example>
 
 <task>
-Define the words in the sentence below
+Identify phrases and the base forms of words in the sentence below
 Sentence: ${sentence}
-Vocabulary:
