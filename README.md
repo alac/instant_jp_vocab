@@ -1,5 +1,5 @@
-# instant_jp_vocab
-Monitor the clipboard and generate vocabulary lists for Japanese sentences.
+# clipboard_translate
+Copy Japanese sentences and automatically generate translations or vocabulary lists using AI.
 Useful with a text hooking utility like Textractor.
 
 !["Recording of the live translation behavior"](docs/image_translation_definition.gif)  
@@ -7,6 +7,10 @@ Live translations, vocabulary lists.
 
 !["Recording of the ai questioning behavior"](docs/image_qanda.gif)  
 Ask questions, with the previous lines as context. Uses ctrl+enter as a shortcut.
+
+Additional features:  
+- Keeps a history of previous lines, so that translations can be more accurate.  
+- Allows for supplying a 'context' for a description of what you're translating (e.g. "These are twitter posts", or a list of characters in a story).  
 
 ## Setup
 1. Install with `pip install -r requirements.txt` and `python -m unidic download`.
@@ -22,10 +26,10 @@ Per story configuration is also possible by adding a `[story_name].toml` in the 
 In particular, you can add synopsis to guide the AI with the `ai_translation_context` key.
 
 ## Suggested Models
-I've seen decent translation quality with the following local models:
-[vntl-llama3-8b](https://huggingface.co/lmg-anon/vntl-llama3-8b-hf)
-[Command-R](https://huggingface.co/CohereForAI/c4ai-command-r-v01)  
-[Mixtral-8x7B-instruct-cosmopedia-japanese20k](https://huggingface.co/aixsatoshi/Mixtral-8x7B-instruct-cosmopedia-japanese20k)  
+I've seen decent translation quality with the following local models:  
+- [vntl-llama3-8b](https://huggingface.co/lmg-anon/vntl-llama3-8b-hf)  
+- [Command-R](https://huggingface.co/CohereForAI/c4ai-command-r-v01)  
+- [Mixtral-8x7B-instruct-cosmopedia-japanese20k](https://huggingface.co/aixsatoshi/Mixtral-8x7B-instruct-cosmopedia-japanese20k)  
 
 If you're going to _ask_ the AI questions about Japanese, I'd recommend using Google's Gemini Pro via API (Gemini 1.5's accuracy is great; and the free-tier rate limiting should be fine for reading).
 
