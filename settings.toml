@@ -38,15 +38,15 @@ speech_region = "Better to put this in user.toml since that won't be visible to 
 speech_voice = "ja-JP-KeitaNeural"
 
 [vocab_list]
-# Determines format of the "define" behavior
 define_prompt_filepath = "prompts/define_base_forms.txt"
-# Changes the behavior of Define->Analysis to look up readings in JMDict, since the AI is often wrong
-# The first time this is ON, it will extract JMDict which is VERY slow.
-enable_jmdict_replacements = false
-# Determines format of the "translation with analysis" behavior (also known as COT)
+translate_prompt_filepath = "prompts/translate.txt"
+q_and_a_prompt_filepath = "prompts/q_and_a.txt"
 cot_prompt_filepath = "prompts/cot_translation.txt"
 cot_examples_filepath = "prompts/examples/cot_translation_original.txt"
 save_cot_outputs = false
+# Changes the behavior of Define->Analysis to look up readings in JMDict, since the AI is often wrong
+# The first time this is ON, it will extract JMDict which is VERY slow.
+enable_jmdict_replacements = false
 # Suggests readings to the AI. Improves lower quality AI results.
 ai_definitions_add_readings = false
 ai_definitions_temp = 0.7

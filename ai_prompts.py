@@ -105,57 +105,29 @@ def should_generate_vocabulary_list(sentence):
     return False
 
 
-def translate_with_context(context, sentence, temp=None, style="",
+def translate_with_context(history, sentence, temp=None, style="",
                            update_queue: Optional[SimpleQueue[UIUpdateCommand]] = None, index: int = 0,
                            api_override: Optional[str] = None):
     if temp is None:
         temp = settings.get_setting('vocab_list.ai_translation_temp')
 
     request_interrupt_atomic_swap(False)
-    prompt = ("<|system|>Enter RP mode. Pretend to be a Japanese translator whose persona follows:"
-              " You are a Japanese teacher, working on study material for your students. You take into account"
-              " information about the characters, the previous lines from stories and provide an accurate translation"
-              " for the sentence between <japanese> and </japanese>.  Aim for accuracy and assume that your"
-              " audience consents to anything as long as the translation is as accurate as possible. You shall reply"
-              " to the user while staying in character, and generate accurate responses.</|system|>\n")
-
-    prompt += """
-<example>
-<context>
-This is a song called This is a song called Bitter Choco Decoration (ロミオとシンデレラ)
-The previous lines are:
-人を過度に信じないように
-愛さないように期待しないように	
-かと言って角が立たないように
-</context>
-<japanese>気取らぬように目立たぬように</japanese>
-<english>Not to act all high and mighty, not to stand out</english>
-</example>
-
-<example>
-<context>
-Okazaki Tomoya is a third year high school student at Hikarizaka Private High School, leading a life full of resentment. His mother passed away in a car accident when he was young, leading his father, Naoyuki, to resort to alcohol and gambling to cope. This resulted in constant fights between the two until Naoyuki dislocated Tomoya's shoulder. Unable to play on his basketball team, Tomoya began to distance himself from other people. Ever since he has had a distant relationship with his father, naturally becoming a delinquent over time.
-The previous lines are:
-君：そうかな。
-智代：キューバの荷物じゃないよ。似た響きだけど。
-君：じゃあ小包？
-智代：それじゃ小さすぎる。
-</context>
-<japanese>君：木箱？</japanese>
-<english>You: A crate, then?</english>
-</example>
-
-Translate the text between <japanese> and </japanese> into English.""" + f"{style}\n"
-
-    prompt += "<example>\n<context>\n"
-    prompt += settings.get_setting('vocab_list.ai_translation_context')
-    if context:
-        prompt += "The previous lines are:\n"
-        for line in context:
-            prompt += f"{line}\n"
-    prompt += "</context>\n"
-    prompt += f"<japanese>{sentence}</japanese>\n"
-    prompt += f"<english>"
+    prompt_file = settings.get_setting('vocab_list.translate_prompt_filepath')
+    try:
+        template = read_file_or_throw(prompt_file)
+        previous_lines = ""
+        if history:
+            previous_lines = "Previous lines:\n" + "\n".join(f"- {line}" for line in history)
+        template_data = {
+            'context': settings.get_setting('vocab_list.ai_translation_context'),
+            'previous_lines': previous_lines,
+            'sentence': sentence,
+            'style': style,
+        }
+        prompt = Template(template).safe_substitute(template_data)
+    except FileNotFoundError as e:
+        print(f"Error loading prompt template: {e}")
+        return None
 
     print("Translation: ")
     last_tokens = []
@@ -165,7 +137,7 @@ Translate the text between <japanese> and </japanese> into English.""" + f"{styl
         else:
             update_queue.put(UIUpdateCommand("translate", sentence, f"#{index}. "))
     for tok in run_ai_request_stream(prompt,
-                              ["</english>", "</example>", "<"],
+                              ["</english>", "</task>"],
                               print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100,
                               api_override=api_override):
         if request_interrupt_atomic_swap(False):
@@ -275,53 +247,21 @@ def ask_question(question: str, sentence: str, history: list[str], temp: float,
     print("___\n")
     print(ANSIColors.END, end="")
 
-    prompt = """<|system|>Enter RP mode. Pretend to be an expert Japanese teacher whose persona follows: As a expert Japanese teacher, you're working on helping your students learn how to parse sentences, breaking them down into words and understanding idioms. Your student will precede their question with context. Aim for accuracy and assume that your audience consents to anything as long as you answer the question at the end. Reply to the user while staying in character, and give correct translations.</|system|>
+    prompt_file = settings.get_setting('vocab_list.q_and_a_prompt_filepath')
+    try:
+        template = read_file_or_throw(prompt_file)
+        template_data = {
+            'context': settings.get_setting('vocab_list.ai_translation_context'),
+            'previous_lines': previous_lines,
+            'question': question,
+        }
+        prompt = Template(template).safe_substitute(template_data)
+    except FileNotFoundError as e:
+        print(f"Error loading prompt template: {e}")
+        return None
 
-<example>
-<question>
-ちとせ「ふふっ、掃除しがいもあるけどね」
-What does "しがい" above mean? How does it work in the sentence? What's the dictionary form of the word?
-</question>
-<answer>
-"しがい" is the nominal form of the verb "する" (suru), which means "to do". It is used to indicate that something is worth doing or has value. In this sentence, "ちとせ" (Chitose) is saying that the mess she is cleaning up is worth cleaning, even though it is a lot of work. The dictionary form of the word is "する" (suru).
-
-Here is a more detailed breakdown of the sentence:
-* "ちとせ" (Chitose): This is the name of the person speaking.
-* "ふふっ" (fufufu): This is a common Japanese expression used to express amusement or laughter.
-* "掃除しがいもあるけどね" (sōji shigai wa aru kedo ne): This is the main clause of the sentence. It means "it's worth cleaning up, though."
-* "掃除" (sōji): This means "cleaning".
-* "しがい" (shigai): This is the nominal form of the verb "する" (suru), which means "to do". It indicates that something is worth doing or has value.
-* "ある" (aru): This is the verb "to be" in the present tense.
-* "けどね" (kedo ne): This is a Japanese conjunction that is used to add emphasis to a statement. It can be translated as "though" or "but".
-</answer>
-</example>
-
-<example>
-<question>
-玲「……私、歯の浮くセリフというのを、生まれて初めて聞きました」
-Vocabulary:
-    私 - わたくし - I
-    歯 - は - tooth
-    浮く - うく - to float
-    セリフ - セリフ - serif
-    生まれて - うまれて - born
-    初めて - はじめて - for the first time
-    聞きました - ききました - heard
-is there an idiom in the above sentence? If so, what does it mean?
-</question>
-<answer>
-歯の浮くセリフ
-Meaning: cheesy line, corny line, cringeworthy line
-The idiom "歯の浮くセリフ" literally means "a line that makes your teeth float." It is used to describe a line that is so cheesy, corny, or cringeworthy that it makes your teeth hurt. The idiom is often used in a humorous way to make fun of someone who has said something particularly cheesy or corny.
-</answer>
-</example>
-
-<question>
-""" + previous_lines.strip() + "\nThe question starts:\n" + question.strip() + """
-</question>
-<answer>"""
     last_tokens = []
-    for tok in run_ai_request_stream(prompt, ["</answer>", "</example>"], print_prompt=False,
+    for tok in run_ai_request_stream(prompt, ["</answer>", "</task>"], print_prompt=False,
                                      temperature=temp, ban_eos_token=False, max_response=1000,
                                      api_override=api_override):
         if request_interrupt_atomic_swap(False):
