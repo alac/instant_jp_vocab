@@ -84,7 +84,7 @@ class HistoryState:
 class JpVocabUI:
     def __init__(self, source: str):
         self.tk_root = None
-        self.text_output_scrolledtext = None
+        self.text_output_scrolled_text = None
         self.get_definitions_button = None
         self.retry_translation_button = None
         self.ask_question_button = None
@@ -136,7 +136,7 @@ class JpVocabUI:
         self.history_states = []  # type: list[HistoryState]
         self.history_states_index = -1
 
-    def on_ai_service_change(self, *args):
+    def on_ai_service_change(self, *_args):
         selected_service = self.ai_service.get()
         print(f"AI service changed to: {selected_service}")
         logging.info(f"AI service changed to: {selected_service}")
@@ -305,8 +305,8 @@ class JpVocabUI:
         )
         font_spinbox.pack(side=tk.LEFT, padx=2)
 
-        self.text_output_scrolledtext = ScrolledText(root, wrap="word")
-        self.text_output_scrolledtext.grid(row=2, column=0, columnspan=6, sticky="nsew")
+        self.text_output_scrolled_text = ScrolledText(root, wrap="word")
+        self.text_output_scrolled_text.grid(row=2, column=0, columnspan=6, sticky="nsew")
 
         # Run the Tkinter event loop
         root.after(200, lambda: self.update_status(root))
@@ -504,7 +504,7 @@ class JpVocabUI:
 
     def ask_question(self):
         request_interrupt_atomic_swap(True)
-        self.ui_question = self.text_output_scrolledtext.get("1.0", tk.END)
+        self.ui_question = self.text_output_scrolled_text.get("1.0", tk.END)
         self.ui_response = ""
         self.show_qanda = True
         self.command_queue.put(MonitorCommand("qanda", self.ui_sentence, self.history[:], self.ui_question,
@@ -604,16 +604,16 @@ class JpVocabUI:
         try:
             size = int(self.font_size.get())
             if 8 <= size <= 72:
-                current_font = self.text_output_scrolledtext.cget("font")
+                current_font = self.text_output_scrolled_text.cget("font")
                 if isinstance(current_font, str):
                     family = current_font
                 else:
                     family = current_font.split()[0]
-                self.text_output_scrolledtext.configure(font=(family, size))
+                self.text_output_scrolled_text.configure(font=(family, size))
         except ValueError:
             pass
 
-    def update_font_size(self, *args):
+    def update_font_size(self, *_args):
         if self.font_size_changed_signal:
             self.tk_root.after_cancel(self.font_size_changed_signal)
         self.font_size_changed_signal = self.tk_root.after(FONT_SIZE_DEBOUNCE_DURATION, self.apply_font_size)
@@ -712,7 +712,7 @@ class JpVocabUI:
         if current_clipboard != self.previous_clipboard:
             japanese_detected = should_generate_vocabulary_list(sentence=current_clipboard)
             is_editing_textfield = (current_clipboard in self.last_textfield_value
-                                    and self.tk_root.focus_get() == self.text_output_scrolledtext)
+                                    and self.tk_root.focus_get() == self.text_output_scrolled_text)
             if japanese_detected and not is_editing_textfield:
                 if not any([(current_clipboard in previous or previous in current_clipboard) for previous in
                             self.history]):
@@ -794,8 +794,8 @@ class JpVocabUI:
             textfield_value = (f"{self.ui_sentence.strip()}\n\n{clean_translation}\n\n{self.ui_definitions}"
                                f"\n\n{self.ui_translation_validation}")
         if self.last_textfield_value is None or self.last_textfield_value != textfield_value:
-            self.text_output_scrolledtext.delete("1.0", tk.END)  # Clear current contents.
-            self.text_output_scrolledtext.insert(tk.INSERT, textfield_value)
+            self.text_output_scrolled_text.delete("1.0", tk.END)  # Clear current contents.
+            self.text_output_scrolled_text.insert(tk.INSERT, textfield_value)
             self.last_textfield_value = textfield_value
 
 
@@ -851,8 +851,8 @@ if __name__ == '__main__':
                             help="The name associated with each 'translation history'. Providing a unique name for each"
                             " allows for tracking each translation history separately when switching sources.",
                             type=str)
-        args = parser.parse_args()
-        source_tag = args.source
+        parser_args = parser.parse_args()
+        source_tag = parser_args.source
 
     source_settings_path = os.path.join("settings", f"{source_tag}.toml")
     if os.path.isfile(source_settings_path):

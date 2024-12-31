@@ -223,22 +223,24 @@ def hiragana_reading(katakana_reading: str) -> str:
 
 
 if __name__ == "__main__":
-    text = "麩菓子は、麩を主材料とした日本の菓子。"
-    for r in get_definitions_for_sentence(text):
-        print(r)
+    def test():
+        text = "麩菓子は、麩を主材料とした日本の菓子。"
+        for r in get_definitions_for_sentence(text):
+            print(r)
 
-    text = """
-    Vocabulary:
-    - カメラマン [base form] (kameraman): photographer
-    - 件 [base form] (ken): matter, case
-    - 解決 [base form] (kaiketsu): resolution, settlement
-    - させる [base form of causative] (saseru): to make/let someone do
-    - 為 [base form] (tame): for the sake of
-    """
-    entries = parse_vocab_readings(text)
-    for entry in entries:
-        print(f"{entry.base_form} ({entry.readings}): {entry.meaning}")
+        text = """
+        Vocabulary:
+        - カメラマン [base form] (kameraman): photographer
+        - 件 [base form] (ken): matter, case
+        - 解決 [base form] (kaiketsu): resolution, settlement
+        - させる [base form of causative] (saseru): to make/let someone do
+        - 為 [base form] (tame): for the sake of
+        """
+        entries = parse_vocab_readings(text)
+        for entry in entries:
+            print(f"{entry.base_form} ({entry.readings}): {entry.meanings}")
 
-    updated_entries = correct_vocab_readings(entries)
-    for entry in updated_entries:
-        print(f"{entry.base_form} ({entry.readings}): {entry.meaning}")
+        updated_entries = correct_vocab_readings(entries)
+        for entry in updated_entries:
+            print(f"{entry.base_form} ({entry.readings}): {entry.meanings}")
+    test()

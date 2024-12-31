@@ -125,9 +125,9 @@ def translate_with_context(history, sentence, temp=None, style="",
         else:
             update_queue.put(UIUpdateCommand("translate", sentence, f"#{index}. "))
     for tok in run_ai_request_stream(prompt,
-                              ["</english>", "</task>"],
-                              print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100,
-                              api_override=api_override):
+                                     ["</english>", "</task>"],
+                                     print_prompt=False, temperature=temp, ban_eos_token=False, max_response=100,
+                                     api_override=api_override):
         if request_interrupt_atomic_swap(False):
             print(ANSIColors.GREEN, end="")
             print("-interrupted-\n")
