@@ -257,7 +257,7 @@ class JpVocabUI:
             },
             {
                 "text": "📚",
-                "command": self.get_definitions,
+                "command": self.trigger_get_definitions,
                 "tooltip": "Get Definitions"
             },
             {
@@ -368,19 +368,32 @@ class JpVocabUI:
         with self.sentence_lock:
             self.locked_sentence = self.ui_sentence
 
-    def trigger_translation(self):
-        self._prep_translation()
+    def trigger_auto_behavior(self):
+        pass
 
-        if self.translation_style.get() == TranslationType.Off:
+    def perform_translation(self, style: TranslationType):
+        request_interrupt_atomic_swap(True)
+        self.show_qanda = False
+
+        if style == TranslationType.Off:
             return
-        elif self.translation_style.get() == TranslationType.Translate:
+        elif style in [TranslationType.Define, TranslationType.DefineWithoutAI]:
+            self.ui_definitions = ""
+        elif style in [TranslationType.Translate, TranslationType.BestOfThree, TranslationType.ChainOfThought,
+                       TranslationType.DefineAndChainOfThought, TranslationType.TranslateAndChainOfThought]:
+            self.ui_translation = ""
+            self.ui_translation_validation = ""
+        else:
+            raise ValueError(f"Unhandled 'TranslationType': {style}")
+
+        if style == TranslationType.Translate:
             self.command_queue.put(MonitorCommand(
                 "translate",
                 self.ui_sentence,
                 self.history[:],
                 index=1,
                 api_override=self.ai_service.get()))
-        elif self.translation_style.get() == TranslationType.BestOfThree:
+        elif style == TranslationType.BestOfThree:
             self.command_queue.put(MonitorCommand(
                 "translate",
                 self.ui_sentence,
@@ -411,7 +424,7 @@ class JpVocabUI:
                                                       "",
                                                       api_override=self.ai_service.get(),
                                                       update_token_key="translation_validation"))
-        elif self.translation_style.get() == TranslationType.ChainOfThought:
+        elif style == TranslationType.ChainOfThought:
             self.command_queue.put(MonitorCommand(
                 "translate_cot",
                 self.ui_sentence,
@@ -419,7 +432,7 @@ class JpVocabUI:
                 api_override=self.ai_service.get(),
                 update_token_key="translate"
             ))
-        elif self.translation_style.get() == TranslationType.TranslateAndChainOfThought:
+        elif style == TranslationType.TranslateAndChainOfThought:
             self.command_queue.put(MonitorCommand(
                 "translate",
                 self.ui_sentence,
@@ -431,15 +444,15 @@ class JpVocabUI:
                 self.history[:],
                 api_override=self.ai_service.get(),
                 update_token_key="translation_validation"))
-        elif self.translation_style.get() == TranslationType.Define:
+        elif style == TranslationType.Define:
             self.command_queue.put(MonitorCommand(
                 "define",
                 self.ui_sentence,
                 [],
                 api_override=self.ai_service.get()))
-        elif self.translation_style.get() == TranslationType.DefineWithoutAI:
+        elif style == TranslationType.DefineWithoutAI:
             self.ui_definitions = get_definitions_string(self.ui_sentence)
-        elif self.translation_style.get() == TranslationType.DefineAndChainOfThought:
+        elif style == TranslationType.DefineAndChainOfThought:
             self.command_queue.put(MonitorCommand(
                 "define",
                 self.ui_sentence,
@@ -452,40 +465,20 @@ class JpVocabUI:
                 api_override=self.ai_service.get(),
                 update_token_key="translation_validation",
                 include_readings=True))
+        else:
+            raise ValueError(f"Unhandled 'TranslationType': {style}")
 
     def trigger_basic_translation(self):
-        self._prep_translation()
-        self.command_queue.put(MonitorCommand(
-            "translate",
-            self.ui_sentence,
-            self.history[:],
-            temp=0,
-            index=1,
-            api_override=self.ai_service.get()))
+        self.perform_translation(settings.get_setting_fallback('ui.translate_button_action',
+                                                               TranslationType.Translate))
 
     def trigger_cot_translation(self):
-        self._prep_translation()
-        self.command_queue.put(MonitorCommand(
-            "translate_cot",
-            self.ui_sentence,
-            self.history[:],
-            temp=0,
-            api_override=self.ai_service.get(),
-            update_token_key="translate"
-        ))
+        self.perform_translation(settings.get_setting_fallback('ui.analyze_button_action',
+                                                               TranslationType.ChainOfThought))
 
-    def _prep_translation(self):
-        request_interrupt_atomic_swap(True)
-        self.ui_translation = ""
-        self.ui_translation_validation = ""
-        self.show_qanda = False
-
-    def get_definitions(self):
-        request_interrupt_atomic_swap(True)
-        self.ui_definitions = ""
-        self.show_qanda = False
-        self.command_queue.put(MonitorCommand("define", self.ui_sentence, [], temp=0,
-                                              api_override=self.ai_service.get()))
+    def trigger_get_definitions(self):
+        self.perform_translation(settings.get_setting_fallback('ui.define_button_action',
+                                                               TranslationType.Define))
 
     def ask_question(self):
         request_interrupt_atomic_swap(True)
@@ -728,8 +721,9 @@ class JpVocabUI:
                             self.history.append(next_sentence)
 
                 self.ui_sentence = next_sentence
-                self.ui_translation = ""
                 self.ui_definitions = ""
+                self.ui_translation = ""
+                self.ui_translation_validation = ""
                 self.ui_question = ""
                 self.ui_response = ""
                 self.last_textfield_value = None
@@ -737,7 +731,7 @@ class JpVocabUI:
                     self.locked_sentence = next_sentence
 
                 logging.info(f"New sentence: {next_sentence}")
-                self.trigger_translation()
+                self.trigger_auto_behavior()
                 self.history = self.history[-self.history_length:]
 
                 # each time we add a new sentence, we add a placeholder for it to HistoryStates

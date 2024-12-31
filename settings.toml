@@ -75,6 +75,19 @@ third_temperature = 1.0
 q_and_a_prompt_filepath = "prompts/q_and_a.txt"
 temperature = 0.0
 
+[ui]
+# You can set the behavior of the translate, analyze and define buttons.
+# 'Translate' just AI translates the sentence
+# 'Best of Three' does 3 separate AI translations and optionally asks which is the best.
+# 'With Analysis (CoT)' asks clarification questions before asking for a translations.
+# 'Define->Analysis' is the above with an extra step to try to get more accurate readings.
+# 'Post-Hoc Analysis' is 'Translate' then 'With Analysis (CoT)'
+# 'Define' asks for a vocabulary list without a translation
+# 'Define (without AI)' attempts to generate a vocabulary list without AI at all
+translate_button_action = 'Translate'
+analyze_button_action = 'With Analysis (CoT)'
+define_button_action = 'Define'
+
 [general]
 # The number of previous clipboard values to send to the AI as context.
 translation_history_length = 15
