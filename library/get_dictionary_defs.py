@@ -1,6 +1,6 @@
 from fugashi import Tagger
 import json
-from typing import NamedTuple, Optional
+from typing import Optional
 import re
 from dataclasses import dataclass
 from jamdict import Jamdict
@@ -16,24 +16,24 @@ _jamdict: Optional[Jamdict] = None
 USE_BASE_WORDS = False
 
 
+@dataclass
+class VocabEntry:
+    base_form: str
+    readings: list[str]
+    meanings: list[str]
+
+
 def _initialize_fugashi():
     global _sentence_parser, _meaning_dict
     if _sentence_parser:
         return
 
     _sentence_parser = Tagger('-Owakati')
-    with open("jitendex.json", "r", encoding="utf-8") as f:
+    with open(os.path.join("data", "jitendex.json"), "r", encoding="utf-8") as f:
         _meaning_dict = json.load(f)
 
 
-class WordDefinition(NamedTuple):
-    word: str
-    reading: str
-    hiragana_reading: str
-    meanings: list[str]
-
-
-def get_definitions_for_sentence(sentence: str) -> list[WordDefinition]:
+def get_definitions_for_sentence(sentence: str) -> list[VocabEntry]:
     """
     Take a sentence and return definitions for each word.
     :param sentence:
@@ -57,8 +57,109 @@ def get_definitions_for_sentence(sentence: str) -> list[WordDefinition]:
             base_word = str(word)
             base_word_reading = word.feature.pron
         meanings = _meaning_dict.get(base_word, {}).get("meanings", [])
-        readings.append(WordDefinition(base_word, base_word_reading, hiragana_reading(base_word_reading), meanings))
+        readings.append(VocabEntry(
+                base_form=base_word,
+                readings=[hiragana_reading(base_word_reading)],
+                meanings=meanings,
+            ))
     return readings
+
+
+def get_definitions_string(sentence: str):
+    text = ""
+    seen = []
+    for definition in get_definitions_for_sentence(sentence):
+        if definition.meanings:
+            readings_str = ",".join(definition.readings)
+            new = f"- {definition.base_form} ({readings_str}) - {definition.meanings[0]}\n"
+            if new in seen:
+                continue
+            text += new
+            seen.append(new)
+    return f"Definitions:\n{text}"
+
+
+def parse_vocab_readings(text: str) -> list[VocabEntry]:
+    """
+    extracts '件' from a line like:
+    - 件 [base form] (ken): matter, case
+    """
+    # Matches: "- word [base form] (reading): meaning"
+    vocab_pattern = r'-\s+(\S+)\s+\[([^\]]+)\]\s*\(([^)]+)\):\s*([^\n]+)'
+    matches = re.finditer(vocab_pattern, text)
+
+    vocab_entries = []
+    for match in matches:
+        word, form_type, reading, meaning = match.groups()
+        if 'base form' in form_type.lower():
+            vocab_entries.append(VocabEntry(
+                base_form=word,
+                readings=[reading.strip()],
+                meanings=[meaning.strip()]
+            ))
+
+    return vocab_entries
+
+
+def get_jamdict() -> Jamdict:
+    """Lazy initialization of Jamdict with custom DB path."""
+    global _jamdict
+    if _jamdict is None:
+        db_path = ensure_jamdict_db()
+        logging.info(f"Loading JAMDICT")
+        _jamdict = Jamdict(db_path)
+        logging.info(f"Loaded JAMDICT")
+    return _jamdict
+
+
+def ensure_jamdict_db() -> str:
+    """
+    Ensures jamdict.db exists in the temp directory.
+    Returns the path to the database.
+    """
+    tmp_db_path = Path(os.path.join("tmp", "jamdict.db"))
+
+    if tmp_db_path.exists():
+        return str(tmp_db_path)
+
+    os.makedirs("tmp/", exist_ok=True)
+
+    logging.info(f"Extracting JAMDICT")
+    try:
+        with lzma.open(os.path.join("data", "jamdict.db.xz")) as compressed:
+            with open(tmp_db_path, 'wb') as uncompressed:
+                shutil.copyfileobj(compressed, uncompressed)
+    except Exception as e:
+        logging.info(f"Failed to extract JAMDICT")
+        raise RuntimeError(f"Failed to extract database: {e}")
+    logging.info(f"Extracted JAMDICT")
+
+    return str(tmp_db_path)
+
+
+def correct_vocab_readings(entries: list[VocabEntry]) -> list[VocabEntry]:
+    """
+    Takes a list of VocabEntry and returns an updated list with verified readings.
+    Preserves original entries if no readings found.
+    """
+    jam = get_jamdict()
+    corrected_entries = []
+
+    for entry in entries:
+        try:
+            result = jam.lookup(entry.base_form)
+            if result.entries:
+                new_readings = [str(kana) for kana in result.entries[0].kana_forms]
+                if new_readings:
+                    entry.readings = new_readings
+                else:
+                    logging.info(f"No readings found for: {entry.base_form}")
+            else:
+                logging.info(f"No JMDict entry found for: {entry.base_form}")
+        except Exception as e:
+            logging.error(f"Error looking up {entry.base_form}: {str(e)}")
+        corrected_entries.append(entry)
+    return corrected_entries
 
 
 def hiragana_reading(katakana_reading: str) -> str:
@@ -119,97 +220,6 @@ def hiragana_reading(katakana_reading: str) -> str:
     }
     result = [katakana_to_hiragana.get(c, c) for c in katakana_reading]
     return "".join(result)
-
-
-@dataclass
-class VocabEntry:
-    base_form: str
-    readings: list[str]
-    meaning: str
-
-
-def parse_vocab_readings(text: str) -> list[VocabEntry]:
-    """
-    extracts '件' from a line like:
-    - 件 [base form] (ken): matter, case
-    """
-    # Matches: "- word [base form] (reading): meaning"
-    vocab_pattern = r'-\s+(\S+)\s+\[([^\]]+)\]\s*\(([^)]+)\):\s*([^\n]+)'
-    matches = re.finditer(vocab_pattern, text)
-
-    vocab_entries = []
-    for match in matches:
-        word, form_type, reading, meaning = match.groups()
-        if 'base form' in form_type.lower():
-            vocab_entries.append(VocabEntry(
-                base_form=word,
-                readings=[reading.strip()],
-                meaning=meaning.strip()
-            ))
-
-    return vocab_entries
-
-
-def get_jamdict() -> Jamdict:
-    """Lazy initialization of Jamdict with custom DB path."""
-    global _jamdict
-    if _jamdict is None:
-        db_path = ensure_jamdict_db()
-        logging.info(f"Loading JAMDICT")
-        _jamdict = Jamdict(db_path)
-        logging.info(f"Loaded JAMDICT")
-    return _jamdict
-
-
-def ensure_jamdict_db() -> str:
-    """
-    Ensures jamdict.db exists in the temp directory.
-    Returns the path to the database.
-    """
-    tmp_db_path = Path('tmp/jamdict.db')
-
-    if tmp_db_path.exists():
-        return str(tmp_db_path)
-
-    os.makedirs("tmp/", exist_ok=True)
-
-    logging.info(f"Extracting JAMDICT")
-    try:
-        with lzma.open("data/jamdict.db.xz") as compressed:
-            with open(tmp_db_path, 'wb') as uncompressed:
-                shutil.copyfileobj(compressed, uncompressed)
-    except Exception as e:
-        logging.info(f"Failed to extract JAMDICT")
-        raise RuntimeError(f"Failed to extract database: {e}")
-    logging.info(f"Extracted JAMDICT")
-
-    return str(tmp_db_path)
-
-
-def correct_vocab_readings(entries: list[VocabEntry]) -> list[VocabEntry]:
-    """
-    Takes a list of VocabEntry and returns an updated list with verified readings.
-    Preserves original entries if no readings found.
-    """
-    jam = get_jamdict()
-    corrected_entries = []
-
-    for entry in entries:
-        try:
-            result = jam.lookup(entry.base_form)
-            if result.entries:
-                new_readings = [str(kana) for kana in result.entries[0].kana_forms]
-                if new_readings:
-                    entry.readings = new_readings
-                else:
-                    logging.info(f"No readings found for: {entry.base_form}")
-            else:
-                logging.info(f"No JMDict entry found for: {entry.base_form}")
-        except Exception as e:
-            logging.error(f"Error looking up {entry.base_form}: {str(e)}")
-        corrected_entries.append(entry)
-
-    return corrected_entries
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ import time
 import logging
 
 from library.ai_requests import run_ai_request_stream
-from library.get_dictionary_defs import get_definitions_for_sentence, correct_vocab_readings, parse_vocab_readings
+from library.get_dictionary_defs import correct_vocab_readings, parse_vocab_readings
 from library.settings_manager import settings
 
 
@@ -77,20 +77,6 @@ def run_vocabulary_list(sentence: str, temp: Optional[float] = None,
         if len(last_tokens) == 10 and len(set(last_tokens)) <= 3:
             logging.warning(f"AI generated exited because of looping response: {last_tokens}")
             break
-
-
-def get_definitions_string(sentence: str):
-    text = ""
-    seen = []
-    for definition in get_definitions_for_sentence(sentence):
-        if definition.meanings:
-            new = f"- {definition.word} ({definition.hiragana_reading})\n"
-            if new in seen:
-                continue
-            text += new
-            seen.append(new)
-
-    return f"Definitions:\n{text}"
 
 
 def should_generate_vocabulary_list(sentence):
@@ -186,7 +172,7 @@ def translate_with_context_cot(history, sentence, temp=None,
                     readings_string = "\nSuggested Readings:"
                     for v in vocab:
                         word_readings = ",".join(v.readings)
-                        readings_string += f"\n{v.base_form} [{word_readings}] - {v.meaning}"
+                        readings_string += f"\n{v.base_form} [{word_readings}] - {v.meanings[0]}"
                 else:
                     logging.warning(f"No vocabulary parsed from suggested_readings: {suggested_readings}")
             else:

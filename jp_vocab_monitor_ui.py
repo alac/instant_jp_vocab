@@ -18,6 +18,7 @@ import logging
 from ai_prompts import (should_generate_vocabulary_list, UIUpdateCommand, run_vocabulary_list,
                         translate_with_context, translate_with_context_cot,
                         request_interrupt_atomic_swap, ANSIColors, ask_question)
+from library.get_dictionary_defs import get_definitions_string
 from library.settings_manager import settings
 from library.ai_requests import AI_SERVICE_GEMINI, AI_SERVICE_OOBABOOGA, AI_SERVICE_OPENAI
 
@@ -43,6 +44,8 @@ class TranslationType(str, Enum):
     BestOfThree = 'Best of Three'
     ChainOfThought = 'With Analysis (CoT)'
     TranslateAndChainOfThought = 'Post-Hoc Analysis'
+    Define = 'Define'
+    DefineWithoutAI = 'Define (without AI)'
     DefineAndChainOfThought = 'Define->Analysis'
 
 
@@ -212,6 +215,8 @@ class JpVocabUI:
             TranslationType.BestOfThree,
             TranslationType.ChainOfThought,
             TranslationType.TranslateAndChainOfThought,
+            TranslationType.Define,
+            TranslationType.DefineWithoutAI,
             TranslationType.DefineAndChainOfThought
         )
         translate_dropdown.pack(side=tk.LEFT, padx=2)
@@ -426,6 +431,14 @@ class JpVocabUI:
                 self.history[:],
                 api_override=self.ai_service.get(),
                 update_token_key="translation_validation"))
+        elif self.translation_style.get() == TranslationType.Define:
+            self.command_queue.put(MonitorCommand(
+                "define",
+                self.ui_sentence,
+                [],
+                api_override=self.ai_service.get()))
+        elif self.translation_style.get() == TranslationType.DefineWithoutAI:
+            self.ui_definitions = get_definitions_string(self.ui_sentence)
         elif self.translation_style.get() == TranslationType.DefineAndChainOfThought:
             self.command_queue.put(MonitorCommand(
                 "define",
